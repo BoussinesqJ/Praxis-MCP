@@ -104,20 +104,36 @@ class ReviewFiller:
         根据决策的 ticker 和执行价格，计算 N 日后的收益
         """
         try:
-            # 获取当前行情
-            quotes = await self._data.get_realtime_quote([decision.ticker])
-            if not quotes or decision.ticker not in quotes:
-                return None
+            # 1. 计算目标复盘日期
+            from datetime import timedelta
+            target_date_dt = decision.timestamp + timedelta(days=days)
+            target_date_str = target_date_dt.strftime("%Y-%m-%d")
 
-            current_price = quotes[decision.ticker].get("price", 0)
-            if current_price <= 0:
+            # 2. 尝试从历史 K 线获取复盘日的价格
+            klines = await self._data.get_history_kline(decision.ticker, period="day", count=250)
+            target_price = None
+            if klines:
+                # 寻找在目标日期或之后的第一个交易日的收盘价
+                sorted_klines = sorted(klines, key=lambda x: x["date"])
+                for k in sorted_klines:
+                    if k["date"] >= target_date_str:
+                        target_price = k["close"]
+                        break
+
+            # 3. 回退：如果未能获取历史K线价格，使用实时价格作为 fallback
+            if target_price is None or target_price <= 0:
+                quotes = await self._data.get_realtime_quote([decision.ticker])
+                if quotes and decision.ticker in quotes:
+                    target_price = quotes[decision.ticker].get("price", 0)
+
+            if target_price is None or target_price <= 0:
                 return None
 
             # 计算收益率
             if decision.action in ("buy", "subscribe"):
-                actual_return_pct = (current_price - exec_price) / exec_price
+                actual_return_pct = (target_price - exec_price) / exec_price
             elif decision.action in ("sell", "redeem"):
-                actual_return_pct = (exec_price - current_price) / exec_price
+                actual_return_pct = (exec_price - target_price) / exec_price
             else:
                 actual_return_pct = 0
 
@@ -126,10 +142,10 @@ class ReviewFiller:
 
             return {
                 "reviewed_at": datetime.now(timezone.utc).isoformat(),
-                "actual_price": current_price,
+                "actual_price": target_price,
                 "actual_return_pct": round(actual_return_pct * 100, 2),
                 "benchmark_return_pct": None,  # TODO: 接入基准数据
-                "notes": f"{days}日复盘：执行价{exec_price}→现价{current_price}，收益{actual_return_pct:.2%}，{'正确' if hit else '错误'}",
+                "notes": f"{days}日复盘：执行价{exec_price}→目标日价{target_price}，收益{actual_return_pct:.2%}，{'正确' if hit else '错误'}",
             }
         except Exception as e:
             return {

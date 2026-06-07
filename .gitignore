@@ -110,3 +110,7 @@ PRAXIS 详细实施计划-V2.1-Phase6.md
 
 # ── Windows ──
 nul
+
+# ── SQLite ──
+*.db
+data/*.db

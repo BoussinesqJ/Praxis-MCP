@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from praxis.core.models.investor import InvestorProfile
 from praxis.core.models.asset import AssetType
 from praxis.core.ledger import FileLedger
 from praxis.engine.config_loader import YamlConfigLoader
+from praxis.core.database import Database
 
 
 class SimpleStateBuilder(StateBuilderInterface):
@@ -26,10 +28,12 @@ class SimpleStateBuilder(StateBuilderInterface):
         ledger: FileLedger,
         config_loader: YamlConfigLoader,
         data_provider: DataProvider,
+        db: Database | None = None,
     ):
         self._ledger = ledger
         self._config = config_loader
         self._data = data_provider
+        self._db = db
 
     async def rebuild(
         self,
@@ -42,29 +46,128 @@ class SimpleStateBuilder(StateBuilderInterface):
         investor = self._config.load_investor(investor_id)
         portfolio = self._config.load_portfolio(investor_id, portfolio_id)
 
-        # 2. 从 ledger 计算持仓
+        # 2. 从 ledger 计算持仓 & 现金数据（支持 SQLite 增量重建）
         positions_map: dict[str, dict] = {}
-        for tx in self._ledger.get_all():
-            ticker = tx.ticker
-            if ticker not in positions_map:
-                positions_map[ticker] = {
-                    "quantity": 0.0,
-                    "total_cost": 0.0,
-                    "realized_pnl": 0.0,
-                }
+        total_buy = 0.0
+        total_sell = 0.0
+        total_dividend = 0.0
+        cached_found = False
 
-            pos = positions_map[ticker]
-            if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE):
-                pos["quantity"] += tx.quantity
-                pos["total_cost"] += tx.quantity * tx.price + tx.fee
-            elif tx.type in (TransactionType.SELL, TransactionType.REDEEM):
-                if pos["quantity"] > 0:
-                    avg_cost = pos["total_cost"] / pos["quantity"]
-                    pos["realized_pnl"] += tx.quantity * (tx.price - avg_cost) - tx.fee
-                pos["quantity"] -= tx.quantity
-                pos["total_cost"] = max(0, pos["total_cost"] - tx.quantity * (pos["total_cost"] / max(pos["quantity"] + tx.quantity, 1)))
-            elif tx.type == TransactionType.DIVIDEND:
-                pos["realized_pnl"] += tx.price  # price 字段复用为分红金额
+        all_txs = self._ledger.get_all()
+
+        if self._db:
+            try:
+                with self._db.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "SELECT last_processed_tx_id, state_json FROM state_caches WHERE investor_id = ? AND portfolio_id = ?",
+                        (investor_id, portfolio_id)
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        last_tx_id = row["last_processed_tx_id"]
+                        state_data = json.loads(row["state_json"])
+                        
+                        tx_ids = [t.tx_id for t in all_txs]
+                        if last_tx_id in tx_ids:
+                            idx = tx_ids.index(last_tx_id)
+                            new_txs = all_txs[idx+1:]
+                            
+                            positions_map = state_data.get("positions_map", {})
+                            total_buy = state_data.get("total_buy", 0.0)
+                            total_sell = state_data.get("total_sell", 0.0)
+                            total_dividend = state_data.get("total_dividend", 0.0)
+                            
+                            for tx in new_txs:
+                                tx_investor = getattr(tx, "investor_id", "example")
+                                tx_portfolio = getattr(tx, "portfolio_id", "demo")
+                                if tx_investor != investor_id or tx_portfolio != portfolio_id:
+                                    continue
+                                
+                                ticker = tx.ticker
+                                if ticker not in positions_map:
+                                    positions_map[ticker] = {
+                                        "quantity": 0.0,
+                                        "total_cost": 0.0,
+                                        "realized_pnl": 0.0,
+                                    }
+                                
+                                pos = positions_map[ticker]
+                                if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE):
+                                    pos["quantity"] += tx.quantity
+                                    pos["total_cost"] += tx.quantity * tx.price + tx.fee
+                                    total_buy += tx.quantity * tx.price + tx.fee
+                                elif tx.type in (TransactionType.SELL, TransactionType.REDEEM):
+                                    if pos["quantity"] > 0:
+                                        avg_cost = pos["total_cost"] / pos["quantity"]
+                                        pos["realized_pnl"] += tx.quantity * (tx.price - avg_cost) - tx.fee
+                                    pos["quantity"] -= tx.quantity
+                                    pos["total_cost"] = max(0, pos["total_cost"] - tx.quantity * (pos["total_cost"] / max(pos["quantity"] + tx.quantity, 1)))
+                                    total_sell += tx.quantity * tx.price - tx.fee
+                                elif tx.type == TransactionType.DIVIDEND:
+                                    pos["realized_pnl"] += tx.price
+                                    total_dividend += tx.price
+                            
+                            cached_found = True
+            except Exception:
+                pass
+
+        if not cached_found:
+            positions_map = {}
+            total_buy = 0.0
+            total_sell = 0.0
+            total_dividend = 0.0
+            for tx in all_txs:
+                tx_investor = getattr(tx, "investor_id", "example")
+                tx_portfolio = getattr(tx, "portfolio_id", "demo")
+                if tx_investor != investor_id or tx_portfolio != portfolio_id:
+                    continue
+
+                ticker = tx.ticker
+                if ticker not in positions_map:
+                    positions_map[ticker] = {
+                        "quantity": 0.0,
+                        "total_cost": 0.0,
+                        "realized_pnl": 0.0,
+                    }
+
+                pos = positions_map[ticker]
+                if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE):
+                    pos["quantity"] += tx.quantity
+                    pos["total_cost"] += tx.quantity * tx.price + tx.fee
+                    total_buy += tx.quantity * tx.price + tx.fee
+                elif tx.type in (TransactionType.SELL, TransactionType.REDEEM):
+                    if pos["quantity"] > 0:
+                        avg_cost = pos["total_cost"] / pos["quantity"]
+                        pos["realized_pnl"] += tx.quantity * (tx.price - avg_cost) - tx.fee
+                    pos["quantity"] -= tx.quantity
+                    pos["total_cost"] = max(0, pos["total_cost"] - tx.quantity * (pos["total_cost"] / max(pos["quantity"] + tx.quantity, 1)))
+                    total_sell += tx.quantity * tx.price - tx.fee
+                elif tx.type == TransactionType.DIVIDEND:
+                    pos["realized_pnl"] += tx.price
+                    total_dividend += tx.price
+
+        # 保存/更新缓存
+        if self._db and all_txs:
+            try:
+                last_tx_id = all_txs[-1].tx_id
+                state_json = json.dumps({
+                    "positions_map": positions_map,
+                    "total_buy": total_buy,
+                    "total_sell": total_sell,
+                    "total_dividend": total_dividend
+                })
+                with self._db.get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO state_caches (investor_id, portfolio_id, last_processed_tx_id, state_json)
+                        VALUES (?, ?, ?, ?)
+                        """,
+                        (investor_id, portfolio_id, last_tx_id, state_json)
+                    )
+            except Exception:
+                pass
 
         # 3. 获取行情
         if market_data is None:
@@ -104,22 +207,7 @@ class SimpleStateBuilder(StateBuilderInterface):
             ))
             total_positions_value += market_value
 
-        # 5. 计算现金（简化：初始资金 - 买入总额 + 卖出总额）
-        total_buy = sum(
-            tx.quantity * tx.price + tx.fee
-            for tx in self._ledger.get_all()
-            if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
-        )
-        total_sell = sum(
-            tx.quantity * tx.price - tx.fee
-            for tx in self._ledger.get_all()
-            if tx.type in (TransactionType.SELL, TransactionType.REDEEM)
-        )
-        total_dividend = sum(
-            tx.price
-            for tx in self._ledger.get_all()
-            if tx.type == TransactionType.DIVIDEND
-        )
+        # 5. 计算现金
         available_cash = investor.capital_cny - total_buy + total_sell + total_dividend
         total_assets = available_cash + total_positions_value
 

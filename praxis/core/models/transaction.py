@@ -43,6 +43,20 @@ class Transaction(BaseModel):
     notes: str | None = None
     tags: list[str] = Field(default_factory=list)  # 标签：test/real/migration/opening 等
     asset_type: str | None = None  # 资产类型：stock/etf/offshore_fund
+    investor_id: str | None = "example"
+    portfolio_id: str | None = "demo"
+    prev_hash: str | None = None
+    tx_hash: str | None = None
+
+    def calculate_hash(self, prev_hash: str | None) -> str:
+        """计算当前交易的 SHA-256 哈希值"""
+        import hashlib
+        import json
+        data = self.model_dump(mode="json")
+        data.pop("tx_hash", None)
+        data["prev_hash"] = prev_hash
+        serialized = json.dumps(data, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
     def to_jsonl(self) -> str:
         """序列化为 JSONL 行"""

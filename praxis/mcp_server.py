@@ -13,7 +13,7 @@ from praxis.tools.ledger import get_ledger, add_transaction, approve_transaction
 from praxis.tools.state import get_state
 from praxis.tools.decision import get_decision_record, list_decisions, create_decision
 from praxis.tools.performance import get_performance
-from praxis.tools.strategy import get_strategy, list_strategies, update_portfolio
+from praxis.tools.strategy import get_strategy, list_strategies, update_portfolio, approve_portfolio_update
 from praxis.tools.evolution import evaluate_evolution, evolve_strategy
 from praxis.tools.benchmark import get_benchmark_data, list_benchmarks
 from praxis.tools.nav import record_nav, get_nav_snapshot, get_nav_history
@@ -21,6 +21,7 @@ from praxis.tools.ai_tracking import get_ai_tracking
 from praxis.tools.teams import list_teams, get_team_prompt, compose_team_prompt, list_output_templates, get_output_template, update_output_template, approve_output_template_update, create_output_template
 from praxis.tools.review import fill_reviews, get_review_summary, get_confidence_calibration
 from praxis.tools.backtest import run_backtest, compare_strategy_versions
+from praxis.tools.drift import verify_ledger_integrity, detect_ai_drift
 from praxis.tools.version_compare import compare_versions
 from praxis.tools.grayscale import prepare_grayscale, approve_grayscale
 from praxis.tools.friction import calculate_fee, calculate_slippage, check_trading_time, get_confirm_date
@@ -137,6 +138,8 @@ async def add_transaction_tool(
     auto_approve: bool = False,
     tags: list[str] | None = None,
     asset_type: str | None = None,
+    investor: str = "example",
+    portfolio: str = "demo",
 ) -> dict:
     """添加交易记录（需审批）
 
@@ -151,11 +154,14 @@ async def add_transaction_tool(
         auto_approve: 自动审批（跳过审批流程）
         tags: 标签列表（如 ["test"] ["migration"] ["real"]），绩效计算时可按标签过滤
         asset_type: 资产类型（stock/etf/offshore_fund），用于策略规则精确匹配
+        investor: 投资者 ID
+        portfolio: 组合 ID
     """
     return add_transaction(
         ticker=ticker, action=action, quantity=quantity, price=price,
         fee=fee, decision_id=decision_id, idempotency_key=idempotency_key,
         auto_approve=auto_approve, tags=tags, asset_type=asset_type,
+        investor=investor, portfolio=portfolio,
         workspace=WORKSPACE,
     )
 
@@ -302,6 +308,19 @@ async def update_portfolio_tool(
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
     return update_portfolio(investor, portfolio, field, value, WORKSPACE)
+
+
+@mcp.tool()
+async def approve_portfolio_update_tool(
+    investor: str,
+    portfolio: str,
+    field: str,
+    value: str,
+) -> dict:
+    """审批并通过组合配置修改
+        提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
+    """
+    return approve_portfolio_update(investor, portfolio, field, value, WORKSPACE)
 
 
 @mcp.tool()
@@ -520,6 +539,7 @@ async def run_backtest_tool(
     investor: str,
     portfolio: str,
     days: int = 90,
+    rule_based: bool = False,
 ) -> dict:
     """运行策略回测
 
@@ -528,12 +548,36 @@ async def run_backtest_tool(
         investor: 投资者ID
         portfolio: 组合ID
         days: 回测天数
+        rule_based: 是否进行基于规则和网格触发的历史日K线模拟回测，默认为 False (执行简单净值回测)
 
     Returns:
         回测结果
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
-    return await run_backtest(strategy_name, investor, portfolio, days, WORKSPACE)
+    return await run_backtest(strategy_name, investor, portfolio, days, WORKSPACE, rule_based=rule_based)
+
+
+@mcp.tool()
+def verify_ledger_integrity_tool() -> dict:
+    """审计检查交易账本的 SHA-256 链接及哈希完整性，防篡改审计
+
+    Returns:
+        包含审计结果 (passed) 和错误列表 (errors)
+    """
+    return verify_ledger_integrity(WORKSPACE)
+
+
+@mcp.tool()
+def detect_ai_drift_tool(team_name: str | None = None) -> dict:
+    """计算 AI 决策的 Expected Calibration Error (ECE) 和 Brier score，并给出风控预警状态
+
+    Args:
+        team_name: 可选，指定具体 AI 团队名称（如不指定，则计算全局决策置信度漂移）
+
+    Returns:
+        包含漂移分析指标 (ece, brier_score, status) 以及建议风控动作
+    """
+    return detect_ai_drift(team_name=team_name, workspace=WORKSPACE)
 
 
 @mcp.tool()
@@ -578,6 +622,7 @@ async def prepare_grayscale_tool(
     change_description: str,
     risk_level: str = "medium",
     validation_days: int = 30,
+    new_content: str | None = None,
 ) -> dict:
     """准备策略灰度验证
 
@@ -586,11 +631,12 @@ async def prepare_grayscale_tool(
         change_description: 变更描述
         risk_level: 风险等级（low/medium/high）
         validation_days: 验证天数
+        new_content: 新的策略内容
 
     Returns:
         灰度验证结果
     """
-    return prepare_grayscale(strategy_name, change_description, risk_level, validation_days, WORKSPACE)
+    return prepare_grayscale(strategy_name, change_description, risk_level, validation_days, new_content, WORKSPACE)
 
 
 @mcp.tool()

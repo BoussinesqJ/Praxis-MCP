@@ -97,29 +97,36 @@ class EnhancedPerformanceCalculator(PerformanceCalculatorInterface):
         buy_count = sum(1 for tx in transactions if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE))
         sell_count = sum(1 for tx in transactions if tx.type in (TransactionType.SELL, TransactionType.REDEEM))
 
-        # 3. 计算胜率
+        # 3. 计算胜率与盈亏比
         win_count = 0
         loss_count = 0
+        win_pnls = []
+        loss_pnls = []
         for tx in transactions:
             if tx.type in (TransactionType.SELL, TransactionType.REDEEM):
+                # 仅筛选在当前卖出交易之前发生的买入交易，防范后视偏差 (look-ahead bias)
                 buy_txs = [
                     t for t in transactions
                     if t.ticker == tx.ticker
                     and t.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
+                    and t.created_at < tx.created_at
                 ]
                 if buy_txs:
                     avg_buy_price = sum(t.quantity * t.price for t in buy_txs) / sum(t.quantity for t in buy_txs)
-                    if tx.price > avg_buy_price:
+                    trade_pnl = tx.quantity * (tx.price - avg_buy_price) - tx.fee
+                    if trade_pnl > 0:
                         win_count += 1
+                        win_pnls.append(trade_pnl)
                     else:
                         loss_count += 1
+                        loss_pnls.append(abs(trade_pnl))
 
         total_trades = win_count + loss_count
         win_rate = win_count / total_trades if total_trades > 0 else 0
 
-        # 4. 计算盈亏比
-        avg_win = realized_pnl / win_count if win_count > 0 else 0
-        avg_loss = abs(realized_pnl) / loss_count if loss_count > 0 else 0
+        # 4. 计算盈亏比 (平均盈利 / 平均亏损)
+        avg_win = sum(win_pnls) / len(win_pnls) if win_pnls else 0
+        avg_loss = sum(loss_pnls) / len(loss_pnls) if loss_pnls else 0
         profit_loss_ratio = avg_win / avg_loss if avg_loss > 0 else 0
 
         # 5. 计算换手率

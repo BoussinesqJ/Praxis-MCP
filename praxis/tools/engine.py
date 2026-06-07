@@ -34,16 +34,37 @@ def check_constraints(investor: str, portfolio: str, action: str, ticker: str, a
     try:
         inv = loader.load_investor(investor)
         port = loader.load_portfolio(investor, portfolio)
-        from praxis.core.models.state import PortfolioState, CashState
-        state = PortfolioState(
-            investor_id=investor,
-            portfolio_id=portfolio,
-            cash=CashState(
-                total_assets=inv.capital_cny,
-                available_cash=inv.capital_cny,
-                cash_ratio=1.0,
-            ),
-        )
+        # 从 ledger 重建真实状态
+        from praxis.core.ledger import FileLedger
+        from praxis.core.state_builder import SimpleStateBuilder
+        from praxis.engine.data.provider import CachedDataProvider
+        from pathlib import Path
+        import asyncio
+        import concurrent.futures
+
+        ledger_path = Path(workspace) / "data" / "ledger" / "transactions.jsonl"
+        ledger = FileLedger(ledger_path)
+        provider = CachedDataProvider(workspace=workspace)
+
+        async def get_real_state():
+            try:
+                builder = SimpleStateBuilder(ledger, loader, provider)
+                state = await builder.rebuild(investor, portfolio)
+                return state
+            finally:
+                await provider.close()
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                state = executor.submit(lambda: asyncio.run(get_real_state())).result()
+        else:
+            state = asyncio.run(get_real_state())
+
         checker = SimpleConstraintChecker(inv, port)
         results = checker.check(state, action, ticker, amount=amount)
         return {

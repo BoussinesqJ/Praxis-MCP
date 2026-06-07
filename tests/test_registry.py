@@ -134,7 +134,7 @@ class TestProviderChain:
         chain = registry.get_chain()
         assert len(chain) == 1
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             chain[0][1].get_realtime_quote(["600995"])
         )
         assert result["600995"]["source"] == "mock_a"

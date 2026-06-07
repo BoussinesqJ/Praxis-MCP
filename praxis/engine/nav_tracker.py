@@ -93,6 +93,11 @@ class NavTracker:
         from praxis.core.models.transaction import TransactionType
         positions_map: dict[str, dict] = {}
         for tx in self._ledger.get_all():
+            tx_investor = getattr(tx, "investor_id", "example")
+            tx_portfolio = getattr(tx, "portfolio_id", "demo")
+            if tx_investor != investor_id or tx_portfolio != portfolio_id:
+                continue
+
             ticker = tx.ticker
             if ticker not in positions_map:
                 positions_map[ticker] = {"quantity": 0, "total_cost": 0}
@@ -131,12 +136,16 @@ class NavTracker:
         total_buy = sum(
             tx.quantity * tx.price + tx.fee
             for tx in self._ledger.get_all()
-            if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
+            if getattr(tx, "investor_id", "example") == investor_id
+            and getattr(tx, "portfolio_id", "demo") == portfolio_id
+            and tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
         )
         total_sell = sum(
             tx.quantity * tx.price - tx.fee
             for tx in self._ledger.get_all()
-            if tx.type in (TransactionType.SELL, TransactionType.REDEEM)
+            if getattr(tx, "investor_id", "example") == investor_id
+            and getattr(tx, "portfolio_id", "demo") == portfolio_id
+            and tx.type in (TransactionType.SELL, TransactionType.REDEEM)
         )
         cash = investor.capital_cny - total_buy + total_sell
         total_assets = cash + positions_value

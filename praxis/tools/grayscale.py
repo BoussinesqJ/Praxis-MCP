@@ -11,6 +11,7 @@ def prepare_grayscale(
     change_description: str,
     risk_level: str = "medium",
     validation_days: int = 30,
+    new_content: str | None = None,
     workspace: str = ".",
 ) -> dict:
     """准备策略灰度验证"""
@@ -22,7 +23,7 @@ def prepare_grayscale(
             risk_level=risk_level,
             validation_days=validation_days,
         )
-        result = engine.prepare_grayscale(config)
+        result = engine.prepare_grayscale(config, new_content=new_content)
         return {
             "success": True,
             "data": result.model_dump(),

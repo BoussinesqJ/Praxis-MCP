@@ -30,7 +30,17 @@ async def get_performance(
     try:
         ledger_path = Path(workspace) / "data" / "ledger" / "transactions.jsonl"
         ledger = FileLedger(ledger_path)
-        calculator = EnhancedPerformanceCalculator(ledger)
+
+        # 加载投资者的实际初始资金
+        from praxis.engine.config_loader import YamlConfigLoader
+        loader = YamlConfigLoader(workspace)
+        try:
+            inv = loader.load_investor(investor)
+            initial_capital = inv.capital_cny
+        except Exception:
+            initial_capital = 70000
+
+        calculator = EnhancedPerformanceCalculator(ledger, initial_capital=initial_capital)
 
         # 获取基准数据（沪深300）
         benchmark_return = None

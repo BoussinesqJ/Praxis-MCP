@@ -69,6 +69,8 @@ def add_transaction(
     auto_approve: bool = False,
     tags: list[str] | None = None,
     asset_type: str | None = None,
+    investor: str = "example",
+    portfolio: str = "demo",
     workspace: str = ".",
 ) -> dict:
     """添加交易记录
@@ -104,12 +106,24 @@ def add_transaction(
             status=TransactionStatus.CONFIRMED if auto_approve else TransactionStatus.PENDING,
             tags=tags or [],
             asset_type=asset_type,
+            investor_id=investor,
+            portfolio_id=portfolio,
         )
 
         if auto_approve:
             # 自动审批：直接写入账本
             ledger = _get_ledger(workspace)
             tx_id = ledger.append(tx)
+            
+            # 链接决策与交易
+            if decision_id:
+                try:
+                    from praxis.tools.decision import _get_recorder
+                    recorder = _get_recorder(workspace)
+                    recorder.link_transaction(decision_id, tx_id)
+                except Exception:
+                    pass
+
             return {
                 "success": True,
                 "data": {
@@ -183,6 +197,15 @@ def approve_transaction(tx_id: str, workspace: str = ".") -> dict:
         ledger = _get_ledger(workspace)
         target_tx.tx_id = ""  # 让 ledger 生成正式 ID
         new_tx_id = ledger.append(target_tx)
+
+        # 链接决策与交易
+        if target_tx.decision_id:
+            try:
+                from praxis.tools.decision import _get_recorder
+                recorder = _get_recorder(workspace)
+                recorder.link_transaction(target_tx.decision_id, new_tx_id)
+            except Exception:
+                pass
 
         # 原子重写 pending 文件（移除已审批的）
         _atomic_rewrite_jsonl(pending_path, pending_txs)

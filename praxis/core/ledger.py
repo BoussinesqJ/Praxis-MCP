@@ -17,12 +17,13 @@ from pathlib import Path
 from praxis.core.interfaces import Ledger as LedgerInterface
 from praxis.core.models.transaction import Transaction, TransactionStatus
 from praxis.core.models.error import LedgerError
+from praxis.core.database import Database
 
 
 class FileLedger(LedgerInterface):
     """文件系统交易账本（append-only JSONL）"""
 
-    def __init__(self, ledger_path: str | Path):
+    def __init__(self, ledger_path: str | Path, db: Database | None = None):
         self._path = Path(ledger_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         # 确保文件存在
@@ -31,6 +32,7 @@ class FileLedger(LedgerInterface):
         # 内存索引（启动时加载）
         self._index: dict[str, Transaction] = {}
         self._idempotency_index: dict[str, str] = {}  # idempotency_key → tx_id
+        self._db = db
         self._load_index()
 
     def _load_index(self):
@@ -55,13 +57,31 @@ class FileLedger(LedgerInterface):
         幂等：如果 idempotency_key 已存在，返回已有 tx_id
         """
         # 幂等检查
-        if tx.idempotency_key and tx.idempotency_key in self._idempotency_index:
-            existing_tx_id = self._idempotency_index[tx.idempotency_key]
-            return existing_tx_id
+        if tx.idempotency_key:
+            if tx.idempotency_key in self._idempotency_index:
+                return self._idempotency_index[tx.idempotency_key]
+            if self._db:
+                try:
+                    with self._db.get_connection() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT tx_id FROM idempotency_keys WHERE idempotency_key = ?", (tx.idempotency_key,))
+                        row = cursor.fetchone()
+                        if row:
+                            existing_tx_id = row["tx_id"]
+                            self._idempotency_index[tx.idempotency_key] = existing_tx_id
+                            return existing_tx_id
+                except Exception:
+                    pass
 
         # 确保 tx_id
         if not tx.tx_id:
             tx.tx_id = self._generate_tx_id()
+
+        # 链式哈希计算
+        all_txs = self.get_all()
+        last_tx = all_txs[-1] if all_txs else None
+        tx.prev_hash = last_tx.tx_hash if last_tx else None
+        tx.tx_hash = tx.calculate_hash(tx.prev_hash)
 
         # 序列化
         line = tx.to_jsonl() + "\n"
@@ -73,6 +93,16 @@ class FileLedger(LedgerInterface):
         self._index[tx.tx_id] = tx
         if tx.idempotency_key:
             self._idempotency_index[tx.idempotency_key] = tx.tx_id
+            if self._db:
+                try:
+                    with self._db.get_connection() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute(
+                            "INSERT OR REPLACE INTO idempotency_keys (idempotency_key, tx_id, created_at) VALUES (?, ?, ?)",
+                            (tx.idempotency_key, tx.tx_id, datetime.now(timezone.utc).isoformat())
+                        )
+                except Exception:
+                    pass
 
         return tx.tx_id
 
@@ -123,6 +153,31 @@ class FileLedger(LedgerInterface):
         results = list(self._index.values())
         results.sort(key=lambda tx: tx.created_at)
         return results
+
+    def verify_integrity(self) -> tuple[bool, list[str]]:
+        """验证账本数据的完整性，返回 (是否完整, 错误列表)"""
+        errors = []
+        all_txs = self.get_all()
+        for i, tx in enumerate(all_txs):
+            # 1. 验证 tx_hash 是否匹配
+            calculated = tx.calculate_hash(tx.prev_hash)
+            if tx.tx_hash != calculated:
+                errors.append(
+                    f"Transaction {tx.tx_id} hash mismatch: expected {calculated}, got {tx.tx_hash}"
+                )
+            # 2. 验证前序哈希链接
+            if i > 0:
+                prev_tx = all_txs[i - 1]
+                if tx.prev_hash != prev_tx.tx_hash:
+                    errors.append(
+                        f"Transaction {tx.tx_id} prev_hash mismatch: expected {prev_tx.tx_hash}, got {tx.prev_hash}"
+                    )
+            else:
+                if tx.prev_hash is not None:
+                    errors.append(
+                        f"First transaction {tx.tx_id} prev_hash should be None, got {tx.prev_hash}"
+                    )
+        return len(errors) == 0, errors
 
     def get_by_decision(self, decision_id: str) -> list[Transaction]:
         """获取关联某决策的所有交易"""
@@ -207,18 +262,22 @@ class FileLedger(LedgerInterface):
         return len(to_remove)
 
     def _rewrite_file(self):
-        """重写整个账本文件（仅在 delete/purge 时使用）"""
+        """重写整个账本文件并重新计算链式哈希（仅在 delete/purge 时使用）"""
         tmp_fd, tmp_path = tempfile.mkstemp(
             dir=self._path.parent, suffix=".tmp"
         )
         try:
             with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
-                # 按时间正序写入
+                # 按时间正序写入并重新链接哈希
                 sorted_txs = sorted(
                     self._index.values(),
                     key=lambda tx: tx.created_at,
                 )
+                prev_hash = None
                 for tx in sorted_txs:
+                    tx.prev_hash = prev_hash
+                    tx.tx_hash = tx.calculate_hash(prev_hash)
+                    prev_hash = tx.tx_hash
                     f.write(tx.to_jsonl() + "\n")
                 f.flush()
                 os.fsync(f.fileno())

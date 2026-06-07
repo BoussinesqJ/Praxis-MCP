@@ -83,11 +83,16 @@ class PromptComposer:
         return "\n\n".join(parts)
 
     def _load_team_prompt(self, team_name: str) -> str:
-        """加载团队 prompt（从 teams/base_prompts/）"""
-        team_path = self._workspace / "teams" / "base_prompts" / f"{team_name}.md"
-        if team_path.exists():
-            return team_path.read_text(encoding="utf-8")
-        return ""
+        """加载团队 prompt（优先通过 PromptVersionManager）"""
+        from praxis.engine.prompt_versioning.manager import PromptVersionManager
+        try:
+            manager = PromptVersionManager(self._workspace)
+            return manager.get_prompt(team_name)
+        except Exception:
+            team_path = self._workspace / "teams" / "base_prompts" / f"{team_name}.md"
+            if team_path.exists():
+                return team_path.read_text(encoding="utf-8")
+            return ""
 
     def _load_strategy_context(self, strategy_name: str, team_name: str) -> str:
         """加载策略上下文"""
