@@ -123,8 +123,8 @@ def ws_full(ws_with_ledger):
     nav_dir = ws_with_ledger / "data" / "nav"
     nav_dir.mkdir(parents=True)
     nav_records = [
-        {"date": "2026-06-06", "nav": 1.0, "total_assets": 70852.05},
-        {"date": "2026-06-07", "nav": 1.002, "total_assets": 70993.95},
+        {"date": "2026-06-06", "nav": 1.0, "total_assets": 100000.0},
+        {"date": "2026-06-07", "nav": 1.002, "total_assets": 100200.0},
     ]
     with open(nav_dir / "default.jsonl", "w", encoding="utf-8") as f:
         for r in nav_records:

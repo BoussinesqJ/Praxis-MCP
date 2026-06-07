@@ -26,7 +26,7 @@ async def compare_versions(
 
         # 简化实现：计算当前绩效
         # 实际应该分别计算两个策略版本的绩效
-        metrics = calculator.calculate("example", "grid_value_v9")
+        metrics = calculator.calculate("example", "demo")
 
         comparer = VersionComparer()
         comparison = comparer.compare(

@@ -8,7 +8,7 @@
 
 **参数**：
 - `investor` (string, 必需): 投资者ID（如 example）
-- `portfolio` (string, 必需): 组合ID（如 grid_value_v9）
+- `portfolio` (string, 必需): 组合ID（如 demo）
 
 **返回**：
 ```json

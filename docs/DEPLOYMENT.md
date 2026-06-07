@@ -142,7 +142,7 @@ investors/
 └── example/
     ├── profile.yaml             # 投资者画像
     └── portfolios/
-        └── grid_value_v9/
+        └── demo/
             └── portfolio.yaml   # 组合配置
 
 strategies/
