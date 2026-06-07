@@ -1,0 +1,56 @@
+# 示例组合 — 纯虚构，用于演示网格价值策略
+portfolio:
+  strategy_type: "grid_value"
+  strategy_template: "grid_value"
+  base_currency: "CNY"
+  created_at: "2026-01-01"
+  version: "v1.0"
+  description: "示例组合：2 个 ETF + 1 个股票，演示网格策略"
+
+assets:
+  - ticker: "ETF_300"
+    name: "示例沪深300ETF"
+    type: "etf"
+    category: "defensive_base"
+    target_weight_pct: 25
+    grid:
+      - { trigger_pct: -3.0, shares: 200, status: "active", label: "第一档" }
+      - { trigger_pct: -7.0, shares: 300, status: "active", label: "第二档" }
+      - { trigger_pct: -12.0, shares: 500, status: "active", label: "极端档" }
+    stop_loss: { type: "fixed_pct", trigger_pct: -15 }
+    base_price: 4.00
+
+  - ticker: "ETF_500"
+    name: "示例中证500ETF"
+    type: "etf"
+    category: "growth_satellite"
+    target_weight_pct: 20
+    grid:
+      - { trigger: 2.50, shares: 1000, status: "active", label: "第一档" }
+      - { trigger: 2.30, shares: 1500, status: "active", label: "第二档" }
+      - { trigger: 2.10, shares: 2000, status: "active", label: "极端档" }
+    stop_loss: { type: "fixed", trigger: 2.00 }
+    take_profit:
+      - { trigger: 3.00, sell_pct: 30 }
+      - { trigger: 3.50, sell_pct: 50 }
+
+  - ticker: "STOCK_A"
+    name: "示例电力股"
+    type: "stock"
+    category: "power_infra"
+    target_weight_pct: 15
+    grid:
+      - { trigger: 20.00, shares: 100, status: "active", label: "第一档" }
+      - { trigger: 18.50, shares: 200, status: "active", label: "第二档" }
+      - { trigger: 17.00, shares: 300, status: "active", label: "极端档" }
+    stop_loss: { type: "fixed", trigger: 16.00 }
+    take_profit:
+      - { trigger: 25.00, action: "sell_100_shares" }
+      - { trigger: 28.00, action: "liquidate" }
+    moving_stop: { activate_above: 23.00, trail_pct: 8 }
+
+sentinels:
+  macro_layer:
+    - { ticker: "IDX_000300", name: "沪深300指数", role: "大盘基准" }
+  execution_layer:
+    - { ticker: "ETF_SEMI", name: "示例半导体ETF", role: "成长拦截器", blocks: "ETF_500" }

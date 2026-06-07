@@ -1,0 +1,32 @@
+# 示例投资者画像 — 纯虚构，用于演示和测试
+investor:
+  name: "示例投资者"
+  id: "example"
+  capital_cny: 100000
+  risk_level: "C3"
+  style: "balanced"
+  max_drawdown_pct: 15
+
+constraints:
+  banned_markets:
+    - id: "star_market"
+      desc: "科创板 (688/588)"
+  banned_instruments:
+    - "leverage"
+    - "options"
+    - "short"
+  etf_exemption: true
+
+execution:
+  offshore_fund_window: "14:45-14:55"
+  intraday_open_blackout_minutes: 15
+  min_transaction_cny: 3000
+
+philosophy:
+  beliefs:
+    - "纪律大于方向：防守是底色"
+    - "承认认知局限：阶梯网格是空间换均价"
+    - "生存优先于暴利：控制最大回撤是终极天条"
+  defenses:
+    - "克制贪婪：严禁追涨"
+    - "克制恐惧：网格触发时严禁因恐慌终止执行"

@@ -1,0 +1,42 @@
+{
+	"nodes":[
+		{"id":"moc","type":"text","x":400,"y":0,"width":300,"height":100,"color":"5","text":"# PRAXIS 投研纪律系统\n\n可验证、可审计、可复盘、可进化"},
+		{"id":"access","type":"text","x":0,"y":150,"width":200,"height":80,"color":"1","text":"## 接入层\nMCP Server + CLI\nClaude Desktop"},
+		{"id":"decision","type":"text","x":250,"y":150,"width":200,"height":80,"color":"2","text":"## 决策层\nDecision Record\n人工审批 → 执行"},
+		{"id":"research","type":"text","x":500,"y":150,"width":200,"height":80,"color":"3","text":"## 研究层\nAI 团队\nASRG / 大师圆桌 / 交易团队"},
+		{"id":"rule","type":"text","x":750,"y":150,"width":200,"height":80,"color":"4","text":"## 规则层\n风控约束\n6 级规则分级"},
+		{"id":"fact","type":"text","x":1000,"y":150,"width":200,"height":80,"color":"6","text":"## 事实层\n配置 YAML\n账本 JSONL\n状态缓存"},
+		{"id":"ledger","type":"text","x":0,"y":300,"width":180,"height":120,"color":"1","text":"### 交易账本\n- append-only\n- 反向冲销\n- 幂等键\n- 原子写入"},
+		{"id":"decision-record","type":"text","x":200,"y":300,"width":180,"height":120,"color":"2","text":"### 决策记录\n- 上下文记录\n- AI 团队信号\n- 信心度\n- 5d/20d/60d 复盘"},
+		{"id":"performance","type":"text","x":400,"y":300,"width":180,"height":120,"color":"3","text":"### 绩效验证\n- 最大回撤\n- 夏普比率\n- 超额收益\n- AI 命中率"},
+		{"id":"evolution","type":"text","x":600,"y":300,"width":180,"height":120,"color":"4","text":"### 进化引擎\n- 基于绩效数据\n- 自动备份\n- 人工审批\n- 可回滚"},
+		{"id":"prompt-security","type":"text","x":800,"y":300,"width":180,"height":120,"color":"5","text":"### Prompt 安全\n- 四层结构\n- 危险模式检测\n- 变更审批\n- 审计记录"},
+		{"id":"rule-system","type":"text","x":1000,"y":300,"width":180,"height":120,"color":"6","text":"### 规则系统\n- 6 级分级\n- Schema 定义\n- 测试用例\n- 版本管理"},
+		{"id":"fee-model","type":"text","x":0,"y":480,"width":180,"height":100,"color":"1","text":"### 费用模型\n- A 股佣金\n- 印花税\n- 过户费\n- 场外基金"},
+		{"id":"slippage","type":"text","x":200,"y":480,"width":180,"height":100,"color":"2","text":"### 滑点模型\n- 基础滑点\n- 大单滑点\n- 成本估算"},
+		{"id":"calendar","type":"text","x":400,"y":480,"width":180,"height":100,"color":"3","text":"### 交易日历\n- A 股交易日\n- 节假日\n- T+1 交割"},
+		{"id":"benchmark","type":"text","x":600,"y":480,"width":180,"height":100,"color":"4","text":"### 基准指数\n- 沪深300\n- 中证500\n- 中证红利"},
+		{"id":"nav-tracker","type":"text","x":800,"y":480,"width":180,"height":100,"color":"5","text":"### 净值追踪\n- 日频净值\n- 净值快照\n- 历史记录"},
+		{"id":"review","type":"text","x":1000,"y":480,"width":180,"height":100,"color":"6","text":"### 复盘机制\n- 5d/20d/60d\n- 自动回填\n- 信心度校准"}
+	],
+	"edges":[
+		{"id":"e1","fromNode":"moc","toNode":"access","fromSide":"left","toSide":"right"},
+		{"id":"e2","fromNode":"moc","toNode":"decision","fromSide":"bottom","toSide":"top"},
+		{"id":"e3","fromNode":"moc","toNode":"research","fromSide":"bottom","toSide":"top"},
+		{"id":"e4","fromNode":"moc","toNode":"rule","fromSide":"bottom","toSide":"top"},
+		{"id":"e5","fromNode":"moc","toNode":"fact","fromSide":"right","toSide":"left"},
+		{"id":"e6","fromNode":"access","toNode":"ledger","fromSide":"bottom","toSide":"top"},
+		{"id":"e7","fromNode":"decision","toNode":"decision-record","fromSide":"bottom","toSide":"top"},
+		{"id":"e8","fromNode":"research","toNode":"performance","fromSide":"bottom","toSide":"top"},
+		{"id":"e9","fromNode":"research","toNode":"evolution","fromSide":"bottom","toSide":"top"},
+		{"id":"e10","fromNode":"rule","toNode":"rule-system","fromSide":"bottom","toSide":"top"},
+		{"id":"e11","fromNode":"rule","toNode":"prompt-security","fromSide":"bottom","toSide":"top"},
+		{"id":"e12","fromNode":"fact","toNode":"ledger","fromSide":"left","toSide":"right"},
+		{"id":"e13","fromNode":"ledger","toNode":"fee-model","fromSide":"bottom","toSide":"top"},
+		{"id":"e14","fromNode":"ledger","toNode":"slippage","fromSide":"bottom","toSide":"top"},
+		{"id":"e15","fromNode":"performance","toNode":"benchmark","fromSide":"bottom","toSide":"top"},
+		{"id":"e16","fromNode":"performance","toNode":"nav-tracker","fromSide":"right","toSide":"left"},
+		{"id":"e17","fromNode":"decision-record","toNode":"review","fromSide":"right","toSide":"left"},
+		{"id":"e18","fromNode":"performance","toNode":"calendar","fromSide":"bottom","toSide":"top"}
+	]
+}

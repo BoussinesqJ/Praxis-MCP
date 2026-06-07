@@ -1,0 +1,34 @@
+# 网格价值策略 - AI 团队上下文配置
+# 此文件定义了每个 AI 团队在分析该策略时的重点关注领域
+
+strategy_name: "grid_value"
+description: "网格价值策略 - AI 团队上下文"
+
+teams:
+  asrg:
+    emphasis:
+      - "宏观传导"        # 宏观经济如何影响网格标的
+      - "产业链拆解"      # 标的所在产业链的景气度
+      - "持仓健康诊断"    # 当前持仓的风险评估
+    de_emphasis:
+      - "短期动量"        # 网格策略不追短期动量
+    debate_focus: "网格间距是否需要调整"
+
+  masters:
+    emphasis:
+      - "护城河"          # 标的的竞争优势
+      - "安全边际"        # 当前价格是否有安全边际
+      - "反脆弱性"        # 标的在极端市场下的表现
+    preferred_masters:
+      - "oracle-of-omaha"   # 巴菲特
+      - "charlie-munger"    # 芒格
+      - "ben-graham"        # 格雷厄姆
+      - "dhandho-master"    # 帕布莱
+    debate_focus: "标的是否值得长期持有"
+
+  trading:
+    emphasis:
+      - "网格间距优化"    # 网格触发频率是否合理
+      - "滑点审计"        # 实际成交价与预期的偏差
+      - "洗盘回溯"        # 是否被假突破扫损
+    debate_focus: "是否调整网格参数"

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "praxis": {
+      "command": "praxis",
+      "args": ["serve"],
+      "env": {
+        "PRAXIS_WORKSPACE": "${PRAXIS_WORKSPACE}"
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+name: 网格价值策略
+description: 阶梯网格低吸 + 价值锚定 + 大块摊薄。适合震荡市中耐心积累筹码。
+
+suitable_for:
+  risk_levels: [C3, C4]
+  market_phases: [sideways, mild_bear]
+  investor_style: patient_disciplined
+
+rules:
+  # ── 时间规则 ──
+  - rule: time_rules.offshore_fund_window
+    params: { start: "14:45", end: "14:55" }
+  - rule: time_rules.intraday_full
+    params: { after_open_blackout_minutes: 15 }
+
+  # ── 价格规则 ──
+  - rule: price_rules.grid_trading
+    params: { min_gap_pct: 8 }
+  - rule: price_rules.cost_anchor
+    params: { only_below_avg_cost: true }
+  - rule: price_rules.controlled_chase
+    params: { max_shares: 100, max_loss_pct: 5, max_simultaneous: 2 }
+
+  # ── 风控规则 ──
+  - rule: risk_rules.stop_loss
+    params: { type: fixed, default_pct: -10 }
+  - rule: risk_rules.max_drawdown
+    params: { pct: 20 }
+  - rule: risk_rules.cash_floor
+    params: { min_pct: 40 }
+  - rule: risk_rules.tech_exposure_cap
+    params: { max_pct: 25 }
+  - rule: risk_rules.position_cap
+    params: { max_single_pct: 15 }
+
+  # ── 准入规则 ──
+  - rule: access_rules.blacklist_market
+    params: { markets: [star_market, chinext], etf_exempt: true }
+  - rule: access_rules.blacklist_instrument
+    params: { instruments: [leverage, options, short] }
+
+  # ── 执行规则 ──
+  - rule: execution_rules.min_transaction
+    params: { min_amount_cny: 3000 }
+  - rule: execution_rules.no_falling_knife
+    params: { require_ma_support: true, require_volume_shrink: true }
+  - rule: execution_rules.kline_verification
+    params: { check_macd: true, check_rsi: true, check_ma_position: true }
+  - rule: execution_rules.cyclical_valuation_trap_defense
+    params: { sectors: [coal, semiconductor], require_fundamental: true }
+
+  # ── 消息面规则 ──
+  - rule: news_rules.news_pipeline
+    params:
+      data_source: alphaear_news + alphaear_sentiment
+      classify: [material_risk, core_benefit, noise]
+
+ai_teams:
+  asrg:
+    emphasis: [macro_transmission, industry_chain, holding_diagnosis]
+    de_emphasis: [short_term_momentum]
+  masters:
+    emphasis: [moat, margin_of_safety, anti_fragility]
+    preferred_masters: [oracle-of-omaha, charlie-munger, ben-graham, dhandho-master]
+  trading:
+    emphasis: [grid_optimization, slippage_audit, whipsaw_analysis]
+    debate_focus: 是否调整网格参数
+
+evolution_dimensions:
+  - name: grid_spacing
+    desc: 网格间距是否过密或过疏
+    metric: avg_days_between_triggers
+    healthy_range: [5.0, 30.0]
+  - name: stop_loss_tightness
+    desc: 止损线是否过紧（频繁扫损后反弹）
+    metric: recovery_pct_within_5d
+    threshold: 50.0
+  - name: cost_anchor_effectiveness
+    desc: 成本锚定是否有效摊薄
+    metric: avg_cost_reduction_pct
+    threshold: 3.0
+  - name: cash_floor_calibration
+    desc: 现金底线是否合理
+    metric: unused_cash_ratio
+    healthy_range: [30.0, 60.0]
