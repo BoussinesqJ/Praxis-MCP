@@ -25,7 +25,7 @@ def get_workspace() -> str:
 
 
 @click.group()
-@click.version_option(version="r1.0.0")
+@click.version_option(version="v1.6.0")
 def main():
     """PRAXIS - 投研纪律系统 CLI"""
     pass
@@ -167,14 +167,11 @@ def ledger_list(ticker: str | None, limit: int):
 @click.option("--price", "-p", required=True, type=float, help="价格")
 @click.option("--fee", type=float, default=0, help="手续费")
 @click.option("--auto-approve", is_flag=True, help="自动审批")
-@click.option("--investor", "-i", default="example", help="投资者ID")
-@click.option("--portfolio", "-p", default="demo", help="组合ID")
-def ledger_add(ticker: str, action: str, quantity: float, price: float, fee: float, auto_approve: bool, investor: str, portfolio: str):
+def ledger_add(ticker: str, action: str, quantity: float, price: float, fee: float, auto_approve: bool):
     """添加交易记录"""
     result = add_transaction(
         ticker=ticker, action=action, quantity=quantity, price=price,
-        fee=fee, auto_approve=auto_approve, investor=investor, portfolio=portfolio,
-        workspace=get_workspace(),
+        fee=fee, auto_approve=auto_approve, workspace=get_workspace(),
     )
     if result["success"]:
         data = result["data"]

@@ -27,19 +27,19 @@ def ws(tmp_path):
     ledger_dir = tmp_path / "data" / "ledger"
     ledger_dir.mkdir(parents=True)
     txs = [
-        {"tx_id": f"tx-{i:03d}", "type": "buy", "ticker": "STOCK_A", "quantity": 100,
+        {"tx_id": f"tx-{i:03d}", "type": "buy", "ticker": "600995", "quantity": 100,
          "price": 14.0 + i * 0.5, "fee": 0, "created_at": f"2026-06-{i+1:02d}T10:00:00Z",
          "status": "confirmed", "tags": ["real"]}
         for i in range(1, 8)
     ]
     txs.extend([
-        {"tx_id": "tx-sell-001", "type": "sell", "ticker": "STOCK_A", "quantity": 100,
+        {"tx_id": "tx-sell-001", "type": "sell", "ticker": "600995", "quantity": 100,
          "price": 16.35, "fee": 0, "created_at": "2026-06-08T10:00:00Z",
          "status": "confirmed", "tags": ["real"]},
-        {"tx_id": "tx-sell-002", "type": "sell", "ticker": "STOCK_A", "quantity": 100,
+        {"tx_id": "tx-sell-002", "type": "sell", "ticker": "600995", "quantity": 100,
          "price": 15.50, "fee": 0, "created_at": "2026-06-09T10:00:00Z",
          "status": "confirmed", "tags": ["real"]},
-        {"tx_id": "tx-sell-003", "type": "sell", "ticker": "STOCK_A", "quantity": 100,
+        {"tx_id": "tx-sell-003", "type": "sell", "ticker": "600995", "quantity": 100,
          "price": 17.00, "fee": 0, "created_at": "2026-06-10T10:00:00Z",
          "status": "confirmed", "tags": ["real"]},
     ])

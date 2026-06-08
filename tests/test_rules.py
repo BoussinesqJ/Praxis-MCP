@@ -100,7 +100,7 @@ class TestCashFloorRule:
             portfolio_id="test",
             cash=CashState(total_assets=100000, available_cash=50000, cash_ratio=0.50),
         )
-        results = checker.check(state, "buy", "STOCK_A", amount=5000)
+        results = checker.check(state, "buy", "600995", amount=5000)
         cash_results = [r for r in results if r["rule"] == "risk_rules.cash_floor"]
         assert all(r["passed"] for r in cash_results)
 
@@ -111,7 +111,7 @@ class TestCashFloorRule:
             portfolio_id="test",
             cash=CashState(total_assets=100000, available_cash=20000, cash_ratio=0.20),
         )
-        results = checker.check(state, "buy", "STOCK_A", amount=5000)
+        results = checker.check(state, "buy", "600995", amount=5000)
         cash_results = [r for r in results if r["rule"] == "risk_rules.cash_floor"]
         assert any(not r["passed"] for r in cash_results)
 
@@ -161,7 +161,7 @@ class TestBannedMarketRule:
             portfolio_id="test",
             cash=CashState(total_assets=100000, available_cash=50000, cash_ratio=0.50),
         )
-        results = checker.check(state, "buy", "ETF_500", amount=5000)
+        results = checker.check(state, "buy", "589850", amount=5000)
         market_results = [r for r in results if r["rule"] == "access_rules.blacklist_market"]
         assert all(r["passed"] for r in market_results)
 
@@ -194,7 +194,7 @@ class TestMinTransactionRule:
             portfolio_id="test",
             cash=CashState(total_assets=100000, available_cash=50000, cash_ratio=0.50),
         )
-        results = checker.check(state, "buy", "STOCK_A", amount=5000)
+        results = checker.check(state, "buy", "600995", amount=5000)
         min_results = [r for r in results if r["rule"] == "execution_rules.min_transaction"]
         assert all(r["passed"] for r in min_results)
 
@@ -205,6 +205,6 @@ class TestMinTransactionRule:
             portfolio_id="test",
             cash=CashState(total_assets=100000, available_cash=50000, cash_ratio=0.50),
         )
-        results = checker.check(state, "buy", "STOCK_A", amount=2000)
+        results = checker.check(state, "buy", "600995", amount=2000)
         min_results = [r for r in results if r["rule"] == "execution_rules.min_transaction"]
         assert any(not r["passed"] for r in min_results)

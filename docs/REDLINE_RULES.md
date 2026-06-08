@@ -28,8 +28,8 @@
 **规则**：推送到 GitHub 的代码必须清除所有个人信息
 
 **检查项**：
-- 三尺生 → 示例投资者
-- sanchisheng → example
+- 示例投资者 → 示例投资者
+- example → example
 - 真实路径 → 占位符
 - API Key → 环境变量
 

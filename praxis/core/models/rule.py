@@ -89,7 +89,7 @@ PREDEFINED_RULES = {
             },
             {
                 "name": "科创板ETF应通过",
-                "input": {"ticker": "ETF_500", "is_etf": True},
+                "input": {"ticker": "589850", "is_etf": True},
                 "expected": "pass",
             },
         ],

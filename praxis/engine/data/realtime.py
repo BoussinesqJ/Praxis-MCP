@@ -60,12 +60,8 @@ class TencentDataProvider(DataProvider):
         result = {}
         lines = text.strip().split("\n")
 
-        for i, line in enumerate(lines):
-            if i >= len(original_tickers):
-                break
-            ticker = original_tickers[i]
-
-            # 格式: v_shSTOCK_A="1~示例股票A~STOCK_A~13.38~13.45~..."
+        for line in lines:
+            # 格式: v_sh600995="1~南网储能~600995~13.38~13.45~..."
             match = re.search(r'"(.+)"', line)
             if not match:
                 continue
@@ -74,10 +70,19 @@ class TencentDataProvider(DataProvider):
             if len(fields) < 45:
                 continue
 
+            # 用返回数据中的 ticker，而不是假设顺序
+            ticker = fields[2]
+            if not ticker:
+                continue
+
+            # 只保留请求中的 ticker
+            if ticker not in original_tickers:
+                continue
+
             try:
                 result[ticker] = {
                     "name": fields[1],
-                    "ticker": fields[2],
+                    "ticker": ticker,
                     "price": float(fields[3]) if fields[3] else 0,
                     "prev_close": float(fields[4]) if fields[4] else 0,
                     "open": float(fields[5]) if fields[5] else 0,

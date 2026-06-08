@@ -19,7 +19,7 @@ def sample_decision():
     """示例决策"""
     return DecisionRecord(
         decision_id="",
-        ticker="STOCK_A",
+        ticker="600995",
         action="buy",
         confidence=0.75,
         reasoning="网格触发",
@@ -39,7 +39,7 @@ class TestDecisionCreate:
         """自定义 ID 创建"""
         record = DecisionRecord(
             decision_id="dc-custom-001",
-            ticker="STOCK_A",
+            ticker="600995",
             action="buy",
             confidence=0.75,
             reasoning="测试",
@@ -52,7 +52,7 @@ class TestDecisionCreate:
         for i in range(5):
             record = DecisionRecord(
                 decision_id=f"dc-test-{i:03d}",
-                ticker="STOCK_A",
+                ticker="600995",
                 action="buy",
                 confidence=0.75,
                 reasoning=f"测试 {i}",
@@ -70,7 +70,7 @@ class TestDecisionQuery:
         decision_id = temp_recorder.create(sample_decision)
         result = temp_recorder.get(decision_id)
         assert result is not None
-        assert result.ticker == "STOCK_A"
+        assert result.ticker == "600995"
 
     def test_get_nonexistent(self, temp_recorder):
         """查询不存在的决策"""
@@ -82,7 +82,7 @@ class TestDecisionQuery:
         # 创建一个待审批决策
         record = DecisionRecord(
             decision_id="dc-pending-001",
-            ticker="STOCK_A",
+            ticker="600995",
             action="buy",
             confidence=0.75,
             reasoning="测试",
@@ -93,7 +93,7 @@ class TestDecisionQuery:
         # 创建一个已审批决策
         record2 = DecisionRecord(
             decision_id="dc-approved-001",
-            ticker="STOCK_A",
+            ticker="600995",
             action="buy",
             confidence=0.75,
             reasoning="测试",
@@ -107,7 +107,7 @@ class TestDecisionQuery:
 
     def test_get_by_ticker(self, temp_recorder):
         """按标的查询"""
-        for i, ticker in enumerate(["STOCK_A", "ETF_300", "STOCK_A"]):
+        for i, ticker in enumerate(["600995", "510310", "600995"]):
             record = DecisionRecord(
                 decision_id=f"dc-{ticker}-{i:03d}",
                 ticker=ticker,
@@ -117,7 +117,7 @@ class TestDecisionQuery:
             )
             temp_recorder.create(record)
 
-        results = temp_recorder.get_by_ticker("STOCK_A")
+        results = temp_recorder.get_by_ticker("600995")
         assert len(results) == 2
 
 

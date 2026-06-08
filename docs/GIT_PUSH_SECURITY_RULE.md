@@ -128,7 +128,7 @@ echo "请确认以上检查结果后执行推送"
 
 审查时间：YYYY-MM-DD HH:MM:SS
 审查人：Reasonix
-推送目标：https://github.com/your-username/Praxis.git
+推送目标：https://github.com/BoussinesqJ/Praxis.git
 
 【审查结果】
 - 硬编码路径：✅ 通过

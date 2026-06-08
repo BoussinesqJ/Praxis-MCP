@@ -1,102 +1,114 @@
-# 数据源配置 — 仅使用免费数据源，零 API Key 依赖
-version: "2.0"
-principle: "所有数据源必须免费可用，不依赖任何 API Key 或付费服务"
-
+version: '2.0'
+principle: 所有数据源必须免费可用，不依赖任何 API Key 或付费服务
 providers:
-  # ─── 实时行情 ───
   realtime:
     primary:
-      id: "tencent_finance"
-      endpoint: "http://qt.gtimg.cn/q="
-      encoding: "gbk"
-      auth: "none"
-      covers: ["price", "change_pct", "premium_ratio", "iopv", "high", "low"]
-    
-  # ─── 历史K线 ───
+      id: tencent_finance
+      endpoint: http://qt.gtimg.cn/q=
+      encoding: gbk
+      auth: none
+      covers:
+      - price
+      - change_pct
+      - premium_ratio
+      - iopv
+      - high
+      - low
   history:
     primary:
-      id: "sina_finance"
-      endpoint: "http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData"
-      auth: "none"
-      covers: ["daily_ohlcv", "30day_history"]
+      id: sina_finance
+      endpoint: http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData
+      auth: none
+      covers:
+      - daily_ohlcv
+      - 30day_history
     fallback:
-      id: "tencent_finance_history"
-      endpoint: "http://web.ifzq.gtimg.cn/appnew/tech/history"
-      auth: "none"
-      covers: ["daily_ohlcv"]
-
-  # ─── 技术指标（本地计算）───
+      id: tencent_finance_history
+      endpoint: http://web.ifzq.gtimg.cn/appnew/tech/history
+      auth: none
+      covers:
+      - daily_ohlcv
   technicals:
-    method: "local_compute"
-    source: "history"
-    covers: ["ma5", "ma10", "ma20", "ma60", "rsi14", "macd", "bollinger", "atr14", "vol_ratio"]
-
-  # ─── 基本面/财务 ───
+    method: local_compute
+    source: history
+    covers:
+    - ma5
+    - ma10
+    - ma20
+    - ma60
+    - rsi14
+    - macd
+    - bollinger
+    - atr14
+    - vol_ratio
   fundamentals:
     primary:
-      id: "alphaear_stock"
-      path: "~/AF/skills/alphaear-stock"
-      type: "local_sqlite"
-      auth: "none"
-      covers: ["stock_list", "stock_prices", "financials", "company_info"]
-
-  # ─── 新闻/公告/研报 ───
+      id: alphaear_stock
+      path: ~/AF/skills/alphaear-stock
+      type: local_sqlite
+      auth: none
+      covers:
+      - stock_list
+      - stock_prices
+      - financials
+      - company_info
   news:
     primary:
-      id: "alphaear_news"
-      path: "~/AF/skills/alphaear-news"
-      type: "web_scraper"
-      auth: "none"
-      covers: ["news", "announcements", "research_reports"]
-
-  # ─── 情绪分析 ───
+      id: alphaear_news
+      path: ~/AF/skills/alphaear-news
+      type: web_scraper
+      auth: none
+      covers:
+      - news
+      - announcements
+      - research_reports
   sentiment:
     primary:
-      id: "alphaear_sentiment"
-      path: "~/AF/skills/alphaear-sentiment"
-      type: "local_sqlite"
-      auth: "none"
-      covers: ["news_sentiment", "daily_news_cache", "finbert_analysis"]
-
-  # ─── 宏观数据 ───
+      id: alphaear_sentiment
+      path: ~/AF/skills/alphaear-sentiment
+      type: local_sqlite
+      auth: none
+      covers:
+      - news_sentiment
+      - daily_news_cache
+      - finbert_analysis
   macro:
-    method: "web_scrape"
+    method: web_scrape
     sources:
-      - "国家统计局"
-      - "央行公告"
-      - "东方财富宏观数据"
-    auth: "none"
-
-# 优先级：每个查询类型按 priority 顺序尝试
+    - 国家统计局
+    - 央行公告
+    - 东方财富宏观数据
+    auth: none
 priority:
-  realtime:    ["tencent_finance"]
-  history:     ["sina_finance", "tencent_finance_history"]
-  technicals:  ["local_compute"]
-  fundamentals: ["alphaear_stock"]
-  news:        ["alphaear_news"]
-  sentiment:   ["alphaear_sentiment"]
-
-# 缓存策略
+  realtime:
+  - tencent_finance
+  history:
+  - sina_finance
+  - tencent_finance_history
+  technicals:
+  - local_compute
+  fundamentals:
+  - alphaear_stock
+  news:
+  - alphaear_news
+  sentiment:
+  - alphaear_sentiment
 cache:
-  realtime_ttl_seconds: 60        # 实时行情缓存60秒
-  history_ttl_hours: 24           # 历史K线缓存24小时
-  fundamentals_ttl_hours: 168     # 基本面缓存7天
-  news_ttl_hours: 4               # 新闻缓存4小时
-  db_path: "cache/market_data.db" # SQLite缓存数据库
-
-# ─── 数据源注册表配置（v1.2 新增）───
-# 覆盖各数据源的优先级和启用状态
-# 数字越小优先级越高；enabled: false 禁用该源
+  realtime_ttl_seconds: 60
+  history_ttl_hours: 24
+  fundamentals_ttl_hours: 168
+  news_ttl_hours: 4
+  db_path: cache/market_data.db
 provider_registry:
-  akshare:                         # 需 pip install akshare
+  akshare:
     enabled: true
     priority: 10
-  baostock:                        # 需 pip install baostock
+  baostock:
     enabled: true
-    priority: 20
-  eastmoney:                       # 内置，零依赖
+    priority: 30
+  eastmoney:
     enabled: true
     priority: 50
-  tencent:                         # 内置，零依赖
+  tencent:
     enabled: true
-    priority: 80
+    priority: 5

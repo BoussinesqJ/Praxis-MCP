@@ -1,0 +1,37 @@
+# 基准指数配置
+benchmarks:
+  hs300:
+    name: "沪深300"
+    code: "000300"
+    tencent_code: "sh000300"
+    description: "大盘价值基准"
+
+  zz500:
+    name: "中证500"
+    code: "000905"
+    tencent_code: "sh000905"
+    description: "中盘成长基准"
+
+  zzhy:
+    name: "中证红利"
+    code: "000922"
+    tencent_code: "sh000922"
+    description: "红利策略基准"
+
+  cyb:
+    name: "创业板指"
+    code: "399006"
+    tencent_code: "sz399006"
+    description: "成长风险偏好基准"
+
+  szzz:
+    name: "上证指数"
+    code: "000001"
+    tencent_code: "sh000001"
+    description: "综合市场基准"
+
+  szcz:
+    name: "深证成指"
+    code: "399001"
+    tencent_code: "sz399001"
+    description: "深市综合基准"

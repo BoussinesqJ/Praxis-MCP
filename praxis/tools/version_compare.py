@@ -24,9 +24,20 @@ async def compare_versions(
         ledger = FileLedger(ledger_path)
         calculator = EnhancedPerformanceCalculator(ledger)
 
-        # 简化实现：计算当前绩效
-        # 实际应该分别计算两个策略版本的绩效
-        metrics = calculator.calculate("example", "demo")
+        # 简化实现：使用第一个可用的投资者/组合
+        import yaml
+        investors_dir = Path(workspace) / "investors"
+        inv_id, port_id = "example", "grid_value_v9"
+        for inv_dir in sorted(investors_dir.iterdir()):
+            if not inv_dir.is_dir() or inv_dir.name.startswith(("_", ".")):
+                continue
+            for port_dir in sorted((inv_dir / "portfolios").iterdir()) if (inv_dir / "portfolios").exists() else []:
+                if port_dir.is_dir() and (port_dir / "portfolio.yaml").exists():
+                    inv_id, port_id = inv_dir.name, port_dir.name
+                    break
+            if inv_id != "example":
+                break
+        metrics = calculator.calculate(inv_id, port_id)
 
         comparer = VersionComparer()
         comparison = comparer.compare(

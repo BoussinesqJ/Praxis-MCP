@@ -40,7 +40,6 @@ htmlcov/
 
 # ── Obsidian ──
 .obsidian/
-obsidian/.obsidian/
 
 # ── 临时文件 ──
 *.tmp
@@ -52,41 +51,34 @@ obsidian/.obsidian/
 .codegraph/
 reasonix.toml
 
-# ── 行情/状态缓存（可重建）──
+# ── 运行时数据（可重建，不进仓库）──
 data/market_cache/
 data/state/
 data/reports/
-
-# ── Prompt 版本测试数据 ──
-data/prompt_versions/
-
-# ── 日志 ──
 data/logs/
+data/evolution_memory/
+data/sentinel_history.jsonl
+data/prompt_versions/
 
 # ── 真实交易数据（含敏感持仓，不进仓库）──
 data/ledger/transactions.jsonl
 data/ledger/pending.jsonl
 data/decisions/decision_records.jsonl
-data/nav/
-data/audit/
+data/nav/default.jsonl
+data/audit/prompt_changes.jsonl
 
 # ── 真实投资者数据 ──
 investors/user/
+investors/sanchisheng/
 
 # ── 策略备份（自动生成）──
 strategies/*.bak
-
-# ── 测试输出模板 ──
-teams/output_templates/test_tpl.md
-
-# ── 审批/测试数据 ──
-审批/
-测试审批/
 
 # ── 用户插件（本地开发，不进仓库）──
 providers/*.py
 !providers/__init__.py
 !providers/_example_provider.py
+!providers/alphaear_stock_provider.py
 
 # ── 敏感文件 ──
 *.key
@@ -102,15 +94,9 @@ config/tare_config.json
 config/workbuddy_config.json
 config/niuma_ai_config.json
 
-# ── 设计文档（本地保留）──
-PRAXIS 详细实施计划-V2.0.md
-PRAXIS 投研纪律系统设计文档-V2.0.md
-PRAXIS 详细实施计划-V2.1-Phase6.md
-【GPT】PRAXIS方案评价与整改建议.md
-
 # ── Windows ──
 nul
 
-# ── SQLite ──
-*.db
-data/*.db
+# ── 审批/测试数据 ──
+审批/
+测试审批/

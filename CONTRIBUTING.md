@@ -22,7 +22,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/Praxis.git
+git clone https://github.com/BoussinesqJ/Praxis.git
 cd Praxis
 
 # 创建虚拟环境

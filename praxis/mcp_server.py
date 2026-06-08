@@ -71,9 +71,16 @@ async def get_asset_detail_tool(investor: str, portfolio: str, ticker: str) -> d
 
 @mcp.tool()
 async def get_market_data_tool(tickers: list[str]) -> dict:
-    """获取实时行情数据"""
+    """获取实时行情数据
+
+    Args:
+        tickers: 标的代码列表（如 ["600995", "510310"]）
+
+    Returns:
+        实时行情数据，包含价格、涨跌幅、成交量等
+    """
     from praxis.tools.market import get_market_data
-    return await get_market_data(tickers)
+    return await get_market_data(tickers, WORKSPACE)
 
 
 @mcp.tool()
@@ -274,7 +281,7 @@ async def get_performance_tool(
         exclude_reversed: 排除已冲销的交易对（推荐开启以获得真实绩效）
         exclude_tags: 排除带有这些标签的交易（如 ["test", "migration"]）
         include_tags: 仅计算带有这些标签的交易（如 ["real"]）
-        ticker: 仅计算指定标的的绩效（如 "STOCK_A"）
+        ticker: 仅计算指定标的的绩效（如 "600995"）
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
     from praxis.tools.performance import get_performance
@@ -320,19 +327,6 @@ async def evaluate_evolution_tool(
     """
     from praxis.tools.evolution import evaluate_evolution
     return evaluate_evolution(strategy_name, investor, portfolio, WORKSPACE)
-
-
-@mcp.tool()
-async def evolve_strategy_tool(
-    strategy_name: str,
-    investor: str,
-    portfolio: str,
-) -> dict:
-    """进化策略（需审批）
-        提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
-    """
-    from praxis.tools.evolution import evolve_strategy
-    return evolve_strategy(strategy_name, investor, portfolio, WORKSPACE)
 
 
 @mcp.tool()
@@ -574,26 +568,6 @@ async def run_backtest_tool(
     """
     from praxis.tools.backtest import run_backtest
     return await run_backtest(strategy_name, investor, portfolio, days, WORKSPACE)
-
-
-@mcp.tool()
-async def compare_strategy_versions_tool(
-    strategy_a: str,
-    strategy_b: str,
-    days: int = 90,
-) -> dict:
-    """对比两个策略版本的绩效
-
-    Args:
-        strategy_a: 策略A名称
-        strategy_b: 策略B名称
-        days: 对比天数
-
-    Returns:
-        策略对比结果
-    """
-    from praxis.tools.backtest import compare_strategy_versions
-    return await compare_strategy_versions(strategy_a, strategy_b, days, WORKSPACE)
 
 
 @mcp.tool()
@@ -1114,6 +1088,153 @@ async def rank_agents_tool() -> dict:
     """排名所有 Agent（按决策数量和平均置信度）"""
     from praxis.tools.agent_tracker import rank_agents
     return rank_agents(WORKSPACE)
+
+
+@mcp.tool()
+async def scan_sentinel_radar_tool() -> dict:
+    """执行哨兵雷达扫描（Rule 23/26 核心数据源）
+
+    获取 8 个哨兵 ETF 的实时价格 + 历史K线，计算 MA10/MA20/MA30/MA60，
+    判定多空趋势（close >= MA20 = 多头），统计多头数，输出攻防状态和 Rule 23 验证结果。
+
+    8 个哨兵：
+      大局风格层：510300 沪深300 / 159915 创业板 / 512000 券商 / 159601 恒生科技
+      执行持仓层：512480 半导体 / 515050 通信 / 515220 煤炭 / 511220 国债
+    """
+    from praxis.tools.sentinel import scan_sentinel_radar
+    return await scan_sentinel_radar(WORKSPACE)
+
+
+@mcp.tool()
+async def get_rule23_status_tool() -> dict:
+    """获取 Rule 23 情绪起爆器验证状态
+
+    返回当前连续 <=2 多头哨兵的天数、是否已触发（>=5天）、
+    以及最近 5 天的哨兵历史记录。
+    """
+    from praxis.tools.sentinel import get_rule23_status
+    return await get_rule23_status(WORKSPACE)
+
+
+@mcp.tool()
+async def get_sentinel_history_tool(days: int = 10) -> dict:
+    """获取哨兵历史记录
+
+    Args:
+        days: 返回最近 N 天的记录（默认 10）
+    """
+    from praxis.tools.sentinel import get_sentinel_history
+    return await get_sentinel_history(days, WORKSPACE)
+
+
+@mcp.tool()
+async def get_valuation_percentile_tool(index_code: str = "000300") -> dict:
+    """获取指数PE-TTM历史分位（Rule 23/24 核心数据源）
+
+    Args:
+        index_code: 指数代码（000300=沪深300, 000016=上证50, 000905=中证500, 000852=中证1000）
+
+    Returns:
+        PE当前值、全历史分位、近10年分位、30%/80%分位阈值、Rule 23/24 判定结果
+    """
+    from praxis.tools.valuation import get_valuation_percentile
+    return await get_valuation_percentile(index_code)
+
+
+@mcp.tool()
+async def get_all_valuations_tool() -> dict:
+    """获取所有支持指数的估值分位快照
+
+    Returns:
+        沪深300/上证50/中证500/中证1000 的PE分位数据
+    """
+    from praxis.tools.valuation import check_valuation_for_all_indices
+    return await check_valuation_for_all_indices()
+
+
+@mcp.tool()
+async def get_finance_news_tool(
+    sources: list[str] | None = None,
+    count: int = 10,
+) -> dict:
+    """获取实时财经新闻（基于 AlphaEar）
+
+    支持 10+ 信源：财联社、华尔街见闻、雪球、微博、知乎等。
+
+    Args:
+        sources: 新闻源列表（默认: cls/wallstreetcn/xueqiu）
+        count: 每个源获取的新闻数量
+
+    Returns:
+        新闻列表，按源分组
+    """
+    from praxis.tools.news import get_finance_news
+    return get_finance_news(sources, count, WORKSPACE)
+
+
+@mcp.tool()
+async def get_unified_trends_tool(
+    sources: list[str] | None = None,
+) -> dict:
+    """获取多平台综合热点报告
+
+    Args:
+        sources: 新闻源列表（默认: weibo/zhihu/wallstreetcn）
+
+    Returns:
+        格式化的 Markdown 热点汇总报告
+    """
+    from praxis.tools.news import get_unified_trends_report
+    return get_unified_trends_report(sources, WORKSPACE)
+
+
+@mcp.tool()
+async def get_polymarket_tool(limit: int = 10) -> dict:
+    """获取 Polymarket 预测市场摘要
+
+    Args:
+        limit: 获取的市场数量
+
+    Returns:
+        预测市场报告
+    """
+    from praxis.tools.news import get_polymarket_summary
+    return get_polymarket_summary(limit, WORKSPACE)
+
+
+@mcp.tool()
+async def list_news_sources_tool() -> dict:
+    """列出所有支持的新闻源"""
+    from praxis.tools.news import list_news_sources
+    return list_news_sources()
+
+
+@mcp.tool()
+async def analyze_sentiment_tool(text: str) -> dict:
+    """分析金融文本情感（基于 FinBERT）
+
+    Args:
+        text: 要分析的金融文本（新闻标题、公告、研报摘要等）
+
+    Returns:
+        情感分析结果：score (-1.0~1.0), label (positive/negative/neutral), reason
+    """
+    from praxis.tools.sentiment import analyze_sentiment
+    return analyze_sentiment(text, WORKSPACE)
+
+
+@mcp.tool()
+async def batch_analyze_sentiment_tool(texts: list[str]) -> dict:
+    """批量分析多条金融文本情感
+
+    Args:
+        texts: 要分析的文本列表
+
+    Returns:
+        每条文本的情感分析结果 + 整体情感
+    """
+    from praxis.tools.sentiment import batch_analyze_sentiment
+    return batch_analyze_sentiment(texts, WORKSPACE)
 
 
 def main():

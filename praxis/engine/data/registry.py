@@ -152,7 +152,7 @@ class ProviderRegistry:
         # 腾讯（零依赖，始终可用）
         try:
             from praxis.engine.data.realtime import TencentDataProvider
-            self.register("tencent", TencentDataProvider, priority=80)
+            self.register("tencent", TencentDataProvider, priority=5)
         except Exception as e:
             logger.warning(f"注册腾讯失败: {e}")
 
@@ -168,7 +168,7 @@ class ProviderRegistry:
         # Baostock（可选依赖）
         try:
             from praxis.engine.data.baostock_provider import BaostockProvider
-            self.register("baostock", BaostockProvider, priority=20)
+            self.register("baostock", BaostockProvider, priority=30)
         except ImportError:
             logger.info("Baostock 未安装，跳过 (pip install praxis[baostock])")
         except Exception as e:

@@ -43,7 +43,7 @@ class TestAShareFeeCalculator:
     def test_transfer_fee_shanghai(self):
         """测试沪市过户费（60 开头）"""
         result = self.calculator.calculate(
-            action="buy", quantity=1000, price=10.0, ticker="STOCK_A"
+            action="buy", quantity=1000, price=10.0, ticker="600995"
         )
         # 过户费=10000×0.0001=1.0
         assert result.transfer_fee == 1.0
@@ -63,7 +63,7 @@ class TestAShareFeeCalculator:
     def test_total_fee(self):
         """测试总费用 = 佣金 + 印花税 + 过户费"""
         result = self.calculator.calculate(
-            action="sell", quantity=1000, price=10.0, ticker="STOCK_A"
+            action="sell", quantity=1000, price=10.0, ticker="600995"
         )
         expected = result.commission + result.stamp_tax + result.transfer_fee
         assert result.total_fee == expected
@@ -101,7 +101,7 @@ class TestETFFeeCalculator:
     def test_transfer_fee_shanghai_etf(self):
         """测试沪市 ETF 过户费（51/58 开头）"""
         result = self.calculator.calculate(
-            action="buy", quantity=1000, price=10.0, ticker="ETF_300"
+            action="buy", quantity=1000, price=10.0, ticker="510310"
         )
         # 过户费=10000×0.0001=1.0
         assert result.transfer_fee == 1.0

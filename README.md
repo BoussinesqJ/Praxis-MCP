@@ -6,13 +6,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP Server](https://img.shields.io/badge/MCP-Server-green.svg)](https://modelcontextprotocol.io/)
-[![Tests](https://img.shields.io/badge/tests-418-brightgreen.svg)](tests/)
 
 ---
 
 ## 🎯 系统定位
 
-**R1.0 定位**：个人 A 股 / ETF / 场外基金组合的投研纪律系统（开源版本）
+**v1.6 定位**：个人 A 股 / ETF / 场外基金组合的投研纪律系统（自进化架构 + 金融技能集成）
 
 **核心价值**：
 - 📊 投研闭环验证（策略是否跑赢基准）
@@ -28,11 +27,14 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/Praxis.git
-cd Praxis
+git clone https://github.com/BoussinesqJ/Praxis-MCP.git
+cd Praxis-MCP
 
 # 安装依赖
 pip install -e .
+
+# 安装可选数据源
+pip install -e ".[all]"    # AKShare + Baostock
 ```
 
 ### 配置 AI 工具
@@ -40,10 +42,10 @@ pip install -e .
 1. 设置环境变量：
    ```bash
    # Windows
-   setx PRAXIS_WORKSPACE "你的实际路径\Portfolio vault"
+   setx PRAXIS_WORKSPACE "你的实际路径\Praxis-MCP"
 
    # Linux/Mac
-   export PRAXIS_WORKSPACE="/你的实际路径/Portfolio vault"
+   export PRAXIS_WORKSPACE="/你的实际路径/Praxis-MCP"
    ```
 
 2. 复制配置模板：
@@ -62,16 +64,16 @@ pip install -e .
 praxis serve          # 启动 MCP Server
 praxis --help         # 查看帮助
 praxis portfolio get -i example -p demo   # 读取组合
-praxis market --tickers STOCK_A,ETF_300                  # 获取行情
+praxis market --tickers 600995,510310     # 获取行情
 praxis performance -i example -p demo     # 绩效指标
-praxis validate                                        # 验证配置
+praxis validate                            # 验证配置
 ```
 
 ---
 
 ## 📊 系统能力
 
-### MCP 工具（63 个）
+### MCP 工具（83 个）
 
 | 类别 | 工具数 | 说明 |
 |:----:|:------:|------|
@@ -88,6 +90,12 @@ praxis validate                                        # 验证配置
 | 交易摩擦 | 4 | 费用/滑点/交易时间/确认日 |
 | 数据质量 | 3 | 行情质量检查/清洗/报告 |
 | Prompt版本 | 6 | 安全检查/版本管理/回滚/差异 |
+| **自适应规则** | **4** | **规则学习/审批/激活** |
+| **进化记忆** | **3** | **记忆归档/时间线/回溯查询** |
+| **多 Agent 协作** | **3** | **Agent 决策/共识检查/排名** |
+| **财经新闻** | **4** | **实时新闻/热点报告/预测市场** |
+| **情感分析** | **2** | **FinBERT 情感评分/批量分析** |
+| **估值/哨兵** | **6** | **估值分位/哨兵雷达/Rule 23/26** |
 
 ### MCP 资源（1 个）
 
@@ -147,6 +155,41 @@ praxis validate       # 配置验证
 
 ---
 
+## 🧬 自进化架构（v1.5）+ 金融技能集成（v1.6）
+
+Praxis 通过事件驱动实现自进化闭环：
+
+```
+交易执行 → auto_evolve → 评估 4 维度
+                        → 备份策略
+                        → 落盘报告
+                        → 归档进化记忆
+                        → 学习自适应规则
+                        → 人工审批
+                        → 执行 + 沉淀
+```
+
+- **自适应规则引擎**：从交易/NAV 历史中学习模式，自动生成规则草案
+- **长期记忆**：进化记忆归档、时间线生成、类似情况回溯查询
+- **多 Agent 协作**：Agent 决策标准化、共识检查、准确率排名
+- **事件驱动触发**：交易完成后自动触发进化评估 + 规则学习
+
+---
+
+## 📰 金融技能集成（v1.6）
+
+集成 [AlphaEar](https://github.com/RKiding/AlphaEar) 金融分析技能：
+
+| 能力 | 工具 | 数据源 |
+|:---|:---|:---|
+| 实时新闻 | `get_finance_news_tool` | 财联社/华尔街见闻/雪球等 10+ 信源 |
+| 热点报告 | `get_unified_trends_tool` | 微博/知乎/华尔街见闻聚合 |
+| 预测市场 | `get_polymarket_tool` | Polymarket |
+| 情感分析 | `analyze_sentiment_tool` | FinBERT / LLM |
+| 股票基本面 | `alphaear_stock_provider` | AKShare + Yahoo Finance |
+
+---
+
 ## 🤖 三大 AI 团队
 
 | 团队 | 主理人 | 成员数 | 专业领域 |
@@ -160,20 +203,29 @@ praxis validate       # 配置验证
 ## 📁 项目结构
 
 ```
-Portfolio vault/
+Praxis-MCP/
 ├── praxis/                          # 源代码
-│   ├── mcp_server.py                # MCP Server 入口（63 工具 + 1 资源）
+│   ├── mcp_server.py                # MCP Server 入口（83 工具 + 1 资源）
 │   ├── cli.py                       # CLI 入口（17 个命令组）
 │   ├── core/                        # 核心模块（模型/接口/账本/日志）
 │   ├── engine/                      # 引擎层（对账/绩效/进化/回测/数据源）
-│   │   └── data/                    # 多源数据源（AKShare/Baostock/东方财富/腾讯）
-│   └── tools/                       # MCP 工具实现（含 workspace 发现）
-├── data/                            # 数据目录
+│   │   ├── data/                    # 多源数据源（AKShare/Baostock/东方财富/腾讯）
+│   │   ├── adaptive_rules.py        # 自适应规则引擎
+│   │   ├── consensus.py             # 多 Agent 共识引擎
+│   │   ├── sentinel.py              # 哨兵雷达引擎
+│   │   └── evolution_memory.py      # 进化记忆存储
+│   └── tools/                       # MCP 工具实现
+│       ├── sentinel.py              # 哨兵雷达工具
+│       ├── valuation.py             # 估值分位工具
+│       ├── sentiment.py             # 情感分析工具
+│       └── news.py                  # 新闻聚合工具
+├── data/                            # 数据目录（运行时生成）
 │   ├── ledger/                      # 交易账本（append-only）
 │   ├── decisions/                   # 决策记录
 │   ├── audit/                       # 审计日志
 │   └── nav/                         # 净值记录
 ├── investors/                       # 投资者配置
+│   └── example/                     # 示例投资者
 ├── strategies/                      # 策略模板
 ├── teams/                           # AI 团队配置
 │   ├── base/                        # 基础 Prompt（安全/角色/工具策略）
@@ -182,11 +234,19 @@ Portfolio vault/
 │   ├── strategy/                    # 策略上下文
 │   ├── adaptive/                    # 自适应规则
 │   └── output_templates/            # 输出模板
-├── tests/                           # 测试套件（418 个测试）
+├── providers/                       # 数据源插件
+│   ├── _example_provider.py         # 插件开发示例
+│   └── alphaear_stock_provider.py   # AlphaEar 股票数据源
+├── tests/                           # 测试套件
 ├── docs/                            # 文档
+│   └── dev/                         # 设计文档
 ├── config/                          # 接入配置模板
-├── providers/                       # 数据源插件目录
-└── README.md                        # 本文件
+├── obsidian/                        # Obsidian 知识库
+├── scripts/                         # 工具脚本
+├── CHANGELOG.md                     # 更新日志
+├── CONTRIBUTING.md                  # 贡献指南
+├── LICENSE                          # MIT 许可证
+└── pyproject.toml                   # 项目配置
 ```
 
 ---
@@ -194,11 +254,15 @@ Portfolio vault/
 ## 🧪 测试
 
 ```bash
-python -m pytest tests/ -v    # 运行所有测试
-python -m pytest tests/test_workspace.py -v  # 运行特定测试
-```
+# 运行所有测试
+python -m pytest tests/ -v
 
-**测试结果**：418 passed
+# 运行特定测试
+python -m pytest tests/test_workspace.py -v
+
+# 运行快速冒烟测试
+python -m pytest tests/test_isolation_p0.py tests/test_constraints_p0.py tests/test_performance_p0.py -v
+```
 
 ---
 
@@ -210,6 +274,8 @@ python -m pytest tests/test_workspace.py -v  # 运行特定测试
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | 部署文档 |
 | [docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md) | 接入指南 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 开发路线图 |
+| [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) | 安全审计 |
+| [docs/dev/](docs/dev/) | 设计文档 |
 
 ---
 
@@ -248,16 +314,21 @@ PRAXIS 支持 MCP 协议，可接入以下工具：
 
 | 指标 | 数值 |
 |:----:|:----:|
-| MCP 工具 | 63 |
+| MCP 工具 | 83 |
 | MCP 资源 | 1 |
 | CLI 命令组 | 17 |
-| 测试用例 | 418 |
-| 数据源 | 4（AKShare/Baostock/东方财富/腾讯）+ 用户插件 |
+| 数据源 | 5（AKShare/Baostock/东方财富/腾讯/AlphaEar）+ 用户插件 |
 | AI 团队 | 3 |
 | 输出模板 | 5 |
-| 版本 | r1.0.0 |
+| 版本 | v1.6.0 |
 
 > 📋 开发路线图见 [docs/ROADMAP.md](docs/ROADMAP.md)
+
+---
+
+## 🤝 贡献
+
+欢迎贡献！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ---
 
@@ -269,4 +340,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 🔗 相关链接
 
-- [GitHub 仓库](https://github.com/your-username/Praxis.git)
+- [GitHub 仓库](https://github.com/BoussinesqJ/Praxis-MCP.git)
+- [MCP 协议](https://modelcontextprotocol.io/)
+- [AlphaEar 金融技能](https://github.com/RKiding/AlphaEar)

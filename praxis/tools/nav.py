@@ -51,6 +51,10 @@ def record_nav(
             benchmark_code=_benchmark_code,
         )
         result = tracker.record(daily_nav)
+
+        # 事件驱动：NAV记录后触发进化评估（非阻塞）
+        _trigger_post_nav(workspace, investor, portfolio)
+
         return {"success": True, "data": {"message": result}}
     except ValidationError as e:
         # Provide actionable error message for MCP clients
@@ -93,3 +97,22 @@ def get_nav_history(investor: str, portfolio: str, days: int = 30, workspace: st
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def _trigger_post_nav(workspace: str, investor: str, portfolio: str):
+    """NAV记录后触发进化评估（非阻塞，失败不影响NAV记录）"""
+    try:
+        from praxis.tools.evolution import auto_evolve
+        import yaml
+
+        port_path = Path(workspace) / "investors" / investor / "portfolios" / portfolio / "portfolio.yaml"
+        if not port_path.exists():
+            return
+        pdata = yaml.safe_load(port_path.read_text(encoding="utf-8"))
+        strategy = (pdata.get("portfolio", pdata)).get("strategy_template", "grid_value")
+        auto_evolve(strategy, investor, portfolio, workspace)
+
+        from praxis.tools.adaptive import learn_rules
+        learn_rules(workspace)
+    except Exception:
+        pass

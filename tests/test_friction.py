@@ -14,7 +14,7 @@ class TestCalculateFee:
     def test_stock_buy_fee(self):
         """股票买入费用"""
         result = calculate_fee(
-            ticker="STOCK_A",
+            ticker="600995",
             asset_type="stock",
             action="buy",
             quantity=100,
@@ -27,7 +27,7 @@ class TestCalculateFee:
     def test_stock_sell_fee(self):
         """股票卖出费用（含印花税）"""
         result = calculate_fee(
-            ticker="STOCK_A",
+            ticker="600995",
             asset_type="stock",
             action="sell",
             quantity=100,
@@ -39,7 +39,7 @@ class TestCalculateFee:
     def test_etf_fee(self):
         """ETF费用（无印花税）"""
         result = calculate_fee(
-            ticker="ETF_300",
+            ticker="510310",
             asset_type="etf",
             action="buy",
             quantity=100,
@@ -51,7 +51,7 @@ class TestCalculateFee:
     def test_minimum_commission(self):
         """最低佣金测试"""
         result = calculate_fee(
-            ticker="STOCK_A",
+            ticker="600995",
             asset_type="stock",
             action="buy",
             quantity=10,

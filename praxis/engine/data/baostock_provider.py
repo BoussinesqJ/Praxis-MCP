@@ -28,7 +28,7 @@ def _ensure_baostock():
 
 
 def _to_bs_code(ticker: str) -> str:
-    """转换为 Baostock 代码格式: sh.STOCK_A / sz.000001"""
+    """转换为 Baostock 代码格式: sh.600995 / sz.000001"""
     if "." in ticker:
         return ticker
     if ticker.startswith(("6", "5")):
@@ -53,66 +53,11 @@ class BaostockProvider(DataProvider):
     async def get_realtime_quote(self, tickers: list[str]) -> dict[str, dict]:
         """获取实时行情
 
-        注意：Baostock 主要提供历史数据，实时行情能力有限。
-        此处使用当日 K 线作为近似。
+        注意：Baostock 主要提供历史数据，不支持真正的实时行情。
+        此方法返回空字典，强制系统使用其他数据源（如 Tencent）获取实时数据。
         """
-        if not tickers:
-            return {}
-
-        _ensure_baostock()
-        self._ensure_connected()
-
-        result = {}
-        today = datetime.now().strftime("%Y-%m-%d")
-        start = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-
-        for ticker in tickers:
-            try:
-                bs_code = _to_bs_code(ticker)
-                rs = bs.query_history_k_data_plus(
-                    bs_code,
-                    "date,open,high,low,close,volume,amount",
-                    start_date=start,
-                    end_date=today,
-                    frequency="d",
-                    adjustflag="2",  # 前复权
-                )
-                if rs.error_code != "0":
-                    continue
-
-                rows = []
-                while rs.next():
-                    rows.append(rs.get_row_data())
-
-                if not rows:
-                    continue
-
-                latest = rows[-1]
-                prev = rows[-2] if len(rows) > 1 else None
-
-                close_price = float(latest[4]) if latest[4] else 0
-                prev_close = float(prev[4]) if prev and prev[4] else close_price
-
-                result[ticker] = {
-                    "name": ticker,
-                    "ticker": ticker,
-                    "price": close_price,
-                    "prev_close": prev_close,
-                    "open": float(latest[1]) if latest[1] else 0,
-                    "high": float(latest[2]) if latest[2] else 0,
-                    "low": float(latest[3]) if latest[3] else 0,
-                    "volume": int(float(latest[5])) if latest[5] else 0,
-                    "amount": float(latest[6]) if latest[6] else 0,
-                    "change": round(close_price - prev_close, 4),
-                    "change_pct": round((close_price / prev_close - 1) * 100, 2) if prev_close else 0,
-                    "timestamp": datetime.now().strftime("%Y%m%d%H%M%S"),
-                    "source": "baostock",
-                }
-            except Exception as e:
-                logger.warning(f"Baostock 获取 {ticker} 失败: {e}")
-                continue
-
-        return result
+        # Baostock 不支持实时行情，返回空让系统降级到其他数据源
+        return {}
 
     async def get_history_kline(
         self, ticker: str, period: str = "day", count: int = 60

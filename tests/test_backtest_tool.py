@@ -1,7 +1,8 @@
 """回测工具测试"""
 import pytest
 import asyncio
-from praxis.tools.backtest import run_backtest, compare_strategy_versions
+from praxis.tools.backtest import run_backtest
+from praxis.tools.version_compare import compare_versions
 
 
 class TestBacktestTools:
@@ -15,9 +16,9 @@ class TestBacktestTools:
         assert isinstance(result, dict)
         assert "success" in result
 
-    def test_compare_strategy_versions(self):
+    def test_compare_versions(self):
         """测试策略版本对比"""
-        result = asyncio.run(compare_strategy_versions("grid_value", "momentum"))
+        result = asyncio.run(compare_versions("grid_value", "momentum"))
 
         # 验证结果
         assert isinstance(result, dict)
@@ -36,9 +37,9 @@ class TestBacktestToolsIntegration:
         if result.get("success"):
             assert "data" in result
 
-    def test_compare_strategy_versions_returns_valid_data(self):
+    def test_compare_versions_returns_valid_data(self):
         """测试策略版本对比返回有效数据"""
-        result = asyncio.run(compare_strategy_versions("grid_value", "momentum"))
+        result = asyncio.run(compare_versions("grid_value", "momentum"))
 
         # 验证结果
         assert isinstance(result, dict)

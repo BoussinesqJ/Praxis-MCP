@@ -193,6 +193,9 @@ def approve_transaction(tx_id: str, workspace: str = ".") -> dict:
         # 原子重写 pending 文件（移除已审批的）
         _atomic_rewrite_jsonl(pending_path, pending_txs)
 
+        # 事件驱动：审批通过后触发进化评估
+        _trigger_post_transaction(workspace, target_tx.ticker, target_tx.type.value)
+
         return {
             "success": True,
             "data": {

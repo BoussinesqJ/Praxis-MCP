@@ -30,7 +30,7 @@ class TestMarketToolsIntegration:
 
     def test_get_market_data_with_multiple_tickers(self):
         """测试获取多个标的的市场数据"""
-        result = asyncio.run(get_market_data(["ETF_300", "STOCK_A"]))
+        result = asyncio.run(get_market_data(["ETF_300", "600995"]))
 
         # 验证结果
         assert isinstance(result, dict)

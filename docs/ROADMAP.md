@@ -1,6 +1,6 @@
 # PRAXIS 开发路线图
 
-> 最后更新：2026-06-08（r1.0.0）
+> 最后更新：2026-06-08（v1.6.0）
 
 ---
 
@@ -8,12 +8,12 @@
 
 | 指标 | 数值 |
 |:----:|:----:|
-| 版本 | r1.0.0 |
-| MCP 工具 | 63 |
+| 版本 | v1.6.0 |
+| MCP 工具 | 83 |
 | MCP 资源 | 1 |
 | CLI 命令组 | 17 |
-| 测试用例 | 418 |
-| 数据源 | 4（AKShare/Baostock/东方财富/腾讯）+ 用户插件 |
+| 测试用例 | 111 |
+| 数据源 | 5（AKShare/Baostock/东方财富/腾讯/AlphaEar）+ 用户插件 |
 
 ---
 
@@ -25,84 +25,65 @@
 | v1.1 | 2026-06-05 | 测试强化：329 测试 + 交易摩擦/数据质量/Prompt版本工具 |
 | v1.2 | 2026-06-08 | 数据接入增强 + 引擎合并 + 安全加固：62 工具 |
 | v1.3 | 2026-06-08 | 多源数据源插件化架构：AKShare + Baostock + 用户插件 |
-| r1.0.0 | 2026-06-08 | 开源版本：基于 v1.4，重命名为 r1.0.0，添加开源协议 |
+| v1.4 | 2026-06-08 | Workspace 自动发现 + 场外基金支持 + 实盘测试修复 |
+| v1.5 | 2026-06-08 | 自进化架构（Phase 1-5）+ Lazy Import + 事件驱动闭环 |
+| v1.6 | 2026-06-08 | AlphaEar 金融技能集成 + 哨兵/估值引擎 + 行情数据修复 |
 
 ---
 
-## r1.0.0 变更摘要
+## v1.6 变更摘要
 
-### 新增 MCP 工具（1 个）
-- `discover_workspace_tool`：零参数自动发现投资者/组合/持仓/状态/推荐下一步
+### AlphaEar 金融技能集成
+- `get_finance_news_tool`：10+ 信源实时财经新闻
+- `get_unified_trends_tool`：多平台综合热点报告
+- `get_polymarket_tool`：Polymarket 预测市场摘要
+- `analyze_sentiment_tool` / `batch_analyze_sentiment_tool`：FinBERT 情感分析
+- `providers/alphaear_stock_provider.py`：A股/港股/美股基本面数据源
 
-### 新增 MCP 资源（1 个）
-- `praxis://workspace/discovery`：Workspace 元数据，连接握手时自动暴露
+### 新增引擎
+- 哨兵雷达引擎（sentinel.py）：8 个哨兵 ETF MA20 多空趋势追踪
+- 估值分位引擎（valuation.py）：指数 PE-TTM 历史分位
+
+### 行情数据修复
+- Tencent ticker 映射错误（016874 导致后续 ticker 错位）
+- Baostock 返回过时数据（改为返回空，强制使用腾讯实时数据）
+- `get_market_data_tool` 传递 workspace 参数
+
+---
+
+## v1.5 变更摘要
+
+### 自进化架构（Phase 1-5）
+- **Phase 1**：Lazy Import 启动优化
+- **Phase 2**：`auto_evolve_tool` 一键自进化
+- **Phase 3**：自适应规则引擎（adaptive_rules.py）
+- **Phase 4**：多 Agent 协作（consensus.py + agent_tracker.py）
+- **Phase 5**：长期记忆（evolution_memory.py + memory.py）
+
+### 事件驱动闭环
+- `add_transaction` → `auto_evolve` → `record_evolution_memory` → `learn_rules`
+- 3 个断点全部接通
+
+### 约束引擎策略驱动
+- 从策略文件读取禁入板块/工具/持仓上限/现金底线
+- 冲销交易过滤（`filter_active_transactions`）
+- 盈亏比改为按单笔交易计算
+
+---
+
+## v1.4 变更摘要
+
+### Workspace 自动发现
+- `discover_workspace_tool`：零参数自动发现投资者/组合/状态
+- `praxis://workspace/discovery`：MCP Resource
 
 ### 场外基金支持
-- `get_state_tool`、`get_portfolio_summary_tool`、`nav_tracker` 增加 `get_fund_nav()` fallback
-- 当 `get_realtime_quote` 返回 `price=0` 时自动尝试基金净值（AKShare/东方财富）
+- `get_fund_nav()` fallback（AKShare/东方财富）
 
-### 腾讯 API HTTPS 升级
-- 修复 5 处 `http://qt.gtimg.cn` → `https://qt.gtimg.cn`（腾讯强制 HTTPS）
-
-### Agent 引导优化
-- 14 个工具 docstring 添加 `discover_workspace_tool()` 引导提示
-- MCP Resource 支持客户端自动发现 workspace 信息
-
-### 防御性改进
-- `record_nav_tool` 增加 `ValidationError` 专项捕获 + 可操作错误提示
-
-### Bug 修复
-- 修复双 Workspace 路径混乱（PRAXIS_WORKSPACE 环境变量）
-- 修复 team prompt 加载不完整（teams/ 目录结构对齐）
-- 修复场外基金 FUND_A 市值为 0 的问题
-- 修复绩效 tag 隔离导致买卖配对断裂
-
-### 测试
-- 新增 `test_workspace.py`：41 个测试用例
-- 总测试数：349 → 418（+69）
-
----
-
-## v1.3 变更摘要
-
-### 多源数据源插件化
-- 新增数据源注册表（`praxis/engine/data/registry.py`）
-- AKShare 适配器（东方财富/新浪/同花顺聚合，需 `pip install akshare`）
-- Baostock 适配器（交易所直连，需 `pip install baostock`）
-- 用户插件目录（`providers/`，自动发现 + 优先级链）
-- 健康检查：连续失败 3 次自动标记 unhealthy
-- 可选依赖：`pip install praxis[akshare]` / `praxis[baostock]` / `praxis[all]`
-
-### 容错策略
-```
-AKShare(10) → Baostock(20) → 东方财富(50) → 腾讯(80) → 用户插件(90+) → 本地缓存
-```
-
-### Bug 修复
-- README CLI 示例修正（market quote → market）
-- 版本号统一（cli.py / __init__.py → 1.3.0）
-
----
-
-## v1.2 变更摘要
-
-### 新增 MCP 工具（9 个）
-- 投资者管理: create_investor / create_portfolio / init_investor
-- 审批流程: approve_transaction / reject_transaction / list_pending_transactions
-- 数据清理: delete_transaction / purge_ledger
-- 聚合概览: get_portfolio_summary
-
-### 架构改进
-- Transaction 模型新增 `tags`（标签过滤）和 `asset_type`（资产类型）
-- PerformanceCalculator 支持 `exclude_reversed` / `exclude_tags` / `include_tags` / `ticker` 过滤
-- get_state_tool 新增 `infer_from_ledger` 纯推断模式
-- 引擎层消除并行实现：合并 `engine/` 与 `engine/execution/`
-- 新增东方财富数据源（零 API Key）
-
-### 安全加固
-- 新增 `praxis/core/validation.py` 路径校验工具
-- config_loader 全入口路径遍历防护
-- .gitignore 清理 + 敏感文件排除
+### 实盘测试修复
+- 双 Workspace 路径混乱
+- team prompt 加载不完整
+- 绩效 tag 隔离导致买卖配对断裂
 
 ---
 
@@ -133,9 +114,15 @@ AKShare(10) → Baostock(20) → 东方财富(50) → 腾讯(80) → 用户插�
 | 绩效数据失真 | v1.2 | 标签过滤/冲销排除 |
 | 路径遍历漏洞 | v1.2 | validate_id 全入口覆盖 |
 | 数据源单一 | v1.3 | 多源插件化架构 |
-| Workspace 盲飞 | r1.0.0 | discover_workspace_tool + MCP Resource |
-| 场外基金隐形 | r1.0.0 | get_fund_nav fallback |
-| 腾讯 API 302 | r1.0.0 | HTTP → HTTPS 升级 |
+| Workspace 盲飞 | v1.4 | discover_workspace_tool + MCP Resource |
+| 场外基金隐形 | v1.4 | get_fund_nav fallback |
+| 腾讯 API 302 | v1.4 | HTTP → HTTPS 升级 |
+| 约束引擎空壳 | v1.5 | 策略驱动禁入板块/工具/持仓上限 |
+| 冲销交易污染 | v1.5 | filter_active_transactions |
+| 自进化闭环断裂 | v1.5 | 3 个断点衔接 |
+| 行情 ticker 错位 | v1.6 | Tencent 解析修复 |
+| Baostock 过时数据 | v1.6 | 改为返回空，强制腾讯 |
+| 新闻/情感能力缺失 | v1.6 | AlphaEar 集成 |
 
 ---
 

@@ -33,11 +33,11 @@ def portfolio():
         strategy_type="grid_value",
         strategy_template="grid_value",
         created_at="2026-05-18",
-        version="v1.0",
+        version="v9.0",
         assets=[
             AssetEntry(
-                ticker="STOCK_A",
-                name="示例股票A",
+                ticker="600995",
+                name="南网储能",
                 type=AssetType.STOCK,
                 category=AssetCategory.POWER_INFRA,
                 target_weight_pct=12,
@@ -113,13 +113,13 @@ class TestBannedMarket:
 
     def test_normal_stock_allowed(self, checker, state):
         """正常股票允许"""
-        results = checker.check(state, "buy", "STOCK_A", amount=3000)
+        results = checker.check(state, "buy", "600995", amount=3000)
         market_check = next(r for r in results if r["rule"] == "access_rules.blacklist_market")
         assert market_check["passed"] is True
 
     def test_etf_exemption(self, checker, state):
         """ETF 豁免板块禁令"""
-        results = checker.check(state, "buy", "ETF_500", amount=3000)
+        results = checker.check(state, "buy", "589850", amount=3000)
         market_check = next(r for r in results if r["rule"] == "access_rules.blacklist_market")
         assert market_check["passed"] is True
 
@@ -129,26 +129,26 @@ class TestMinTransaction:
 
     def test_below_minimum(self, checker, state):
         """低于最小金额"""
-        results = checker.check(state, "buy", "STOCK_A", amount=2000)
+        results = checker.check(state, "buy", "600995", amount=2000)
         min_check = next(r for r in results if r["rule"] == "execution_rules.min_transaction")
         assert min_check["passed"] is False
         assert min_check["level"] == "hard_block"
 
     def test_at_minimum(self, checker, state):
         """等于最小金额"""
-        results = checker.check(state, "buy", "STOCK_A", amount=3000)
+        results = checker.check(state, "buy", "600995", amount=3000)
         min_check = next(r for r in results if r["rule"] == "execution_rules.min_transaction")
         assert min_check["passed"] is True
 
     def test_above_minimum(self, checker, state):
         """高于最小金额"""
-        results = checker.check(state, "buy", "STOCK_A", amount=5000)
+        results = checker.check(state, "buy", "600995", amount=5000)
         min_check = next(r for r in results if r["rule"] == "execution_rules.min_transaction")
         assert min_check["passed"] is True
 
     def test_sell_no_minimum(self, checker, state):
         """卖出不检查最小金额"""
-        results = checker.check(state, "sell", "STOCK_A", amount=0)
+        results = checker.check(state, "sell", "600995", amount=0)
         # 卖出不应该检查最小金额
         min_checks = [r for r in results if r["rule"] == "execution_rules.min_transaction"]
         assert len(min_checks) == 0
@@ -159,7 +159,7 @@ class TestCashFloor:
 
     def test_cash_floor_pass(self, checker, state):
         """现金充足"""
-        results = checker.check(state, "buy", "STOCK_A", amount=3000)
+        results = checker.check(state, "buy", "600995", amount=3000)
         cash_check = next(r for r in results if r["rule"] == "risk_rules.cash_floor")
         assert cash_check["passed"] is True
 
@@ -174,7 +174,7 @@ class TestCashFloor:
                 cash_ratio=0.29,
             ),
         )
-        results = checker.check(state, "buy", "STOCK_A", amount=5000)
+        results = checker.check(state, "buy", "600995", amount=5000)
         cash_check = next(r for r in results if r["rule"] == "risk_rules.cash_floor")
         assert cash_check["passed"] is False
         assert cash_check["level"] == "hard_block"
