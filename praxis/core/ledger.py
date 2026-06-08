@@ -17,13 +17,26 @@ from pathlib import Path
 from praxis.core.interfaces import Ledger as LedgerInterface
 from praxis.core.models.transaction import Transaction, TransactionStatus
 from praxis.core.models.error import LedgerError
-from praxis.core.database import Database
+
+
+def filter_active_transactions(txs: list[Transaction]) -> list[Transaction]:
+    """过滤掉冲销相关的交易，只返回有效的活跃交易。
+
+    规则：
+    1. 跳过冲销动作本身（target_tx_id is not None）
+    2. 跳过已被冲销的原始交易（tx_id 出现在其他记录的 target_tx_id 中）
+    """
+    reversed_ids = {tx.target_tx_id for tx in txs if tx.target_tx_id}
+    return [
+        tx for tx in txs
+        if tx.target_tx_id is None and tx.tx_id not in reversed_ids
+    ]
 
 
 class FileLedger(LedgerInterface):
     """文件系统交易账本（append-only JSONL）"""
 
-    def __init__(self, ledger_path: str | Path, db: Database | None = None):
+    def __init__(self, ledger_path: str | Path):
         self._path = Path(ledger_path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         # 确保文件存在
@@ -32,7 +45,6 @@ class FileLedger(LedgerInterface):
         # 内存索引（启动时加载）
         self._index: dict[str, Transaction] = {}
         self._idempotency_index: dict[str, str] = {}  # idempotency_key → tx_id
-        self._db = db
         self._load_index()
 
     def _load_index(self):
@@ -57,31 +69,13 @@ class FileLedger(LedgerInterface):
         幂等：如果 idempotency_key 已存在，返回已有 tx_id
         """
         # 幂等检查
-        if tx.idempotency_key:
-            if tx.idempotency_key in self._idempotency_index:
-                return self._idempotency_index[tx.idempotency_key]
-            if self._db:
-                try:
-                    with self._db.get_connection() as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT tx_id FROM idempotency_keys WHERE idempotency_key = ?", (tx.idempotency_key,))
-                        row = cursor.fetchone()
-                        if row:
-                            existing_tx_id = row["tx_id"]
-                            self._idempotency_index[tx.idempotency_key] = existing_tx_id
-                            return existing_tx_id
-                except Exception:
-                    pass
+        if tx.idempotency_key and tx.idempotency_key in self._idempotency_index:
+            existing_tx_id = self._idempotency_index[tx.idempotency_key]
+            return existing_tx_id
 
         # 确保 tx_id
         if not tx.tx_id:
             tx.tx_id = self._generate_tx_id()
-
-        # 链式哈希计算
-        all_txs = self.get_all()
-        last_tx = all_txs[-1] if all_txs else None
-        tx.prev_hash = last_tx.tx_hash if last_tx else None
-        tx.tx_hash = tx.calculate_hash(tx.prev_hash)
 
         # 序列化
         line = tx.to_jsonl() + "\n"
@@ -93,16 +87,6 @@ class FileLedger(LedgerInterface):
         self._index[tx.tx_id] = tx
         if tx.idempotency_key:
             self._idempotency_index[tx.idempotency_key] = tx.tx_id
-            if self._db:
-                try:
-                    with self._db.get_connection() as conn:
-                        cursor = conn.cursor()
-                        cursor.execute(
-                            "INSERT OR REPLACE INTO idempotency_keys (idempotency_key, tx_id, created_at) VALUES (?, ?, ?)",
-                            (tx.idempotency_key, tx.tx_id, datetime.now(timezone.utc).isoformat())
-                        )
-                except Exception:
-                    pass
 
         return tx.tx_id
 
@@ -127,8 +111,9 @@ class FileLedger(LedgerInterface):
     def _generate_tx_id(self) -> str:
         """生成交易 ID"""
         today = datetime.now().strftime("%Y%m%d")
-        # 统计今天的交易数
-        count = sum(1 for tx in self._index.values() if tx.tx_id and today in tx.tx_id)
+        # 统计今天的交易数（使用前缀匹配，更健壮）
+        prefix = f"tx-{today}-"
+        count = sum(1 for tx_id in self._index if tx_id.startswith(prefix))
         return f"tx-{today}-{count + 1:03d}"
 
     def list(self, ticker: str | None = None, limit: int = 100) -> list[Transaction]:
@@ -154,31 +139,6 @@ class FileLedger(LedgerInterface):
         results.sort(key=lambda tx: tx.created_at)
         return results
 
-    def verify_integrity(self) -> tuple[bool, list[str]]:
-        """验证账本数据的完整性，返回 (是否完整, 错误列表)"""
-        errors = []
-        all_txs = self.get_all()
-        for i, tx in enumerate(all_txs):
-            # 1. 验证 tx_hash 是否匹配
-            calculated = tx.calculate_hash(tx.prev_hash)
-            if tx.tx_hash != calculated:
-                errors.append(
-                    f"Transaction {tx.tx_id} hash mismatch: expected {calculated}, got {tx.tx_hash}"
-                )
-            # 2. 验证前序哈希链接
-            if i > 0:
-                prev_tx = all_txs[i - 1]
-                if tx.prev_hash != prev_tx.tx_hash:
-                    errors.append(
-                        f"Transaction {tx.tx_id} prev_hash mismatch: expected {prev_tx.tx_hash}, got {tx.prev_hash}"
-                    )
-            else:
-                if tx.prev_hash is not None:
-                    errors.append(
-                        f"First transaction {tx.tx_id} prev_hash should be None, got {tx.prev_hash}"
-                    )
-        return len(errors) == 0, errors
-
     def get_by_decision(self, decision_id: str) -> list[Transaction]:
         """获取关联某决策的所有交易"""
         return [tx for tx in self._index.values() if tx.decision_id == decision_id]
@@ -192,6 +152,22 @@ class FileLedger(LedgerInterface):
         original = self.get(tx_id)
         if not original:
             raise LedgerError(f"交易 {tx_id} 不存在")
+
+        # 防护：不能冲销冲销记录本身
+        if original.target_tx_id is not None:
+            raise LedgerError(f"交易 {tx_id} 已经是冲销记录，不能再次冲销")
+
+        # 防护：检查是否已被其他记录冲销
+        for other in self._index.values():
+            if other.target_tx_id == tx_id:
+                raise LedgerError(
+                    f"交易 {tx_id} 已被 {other.tx_id} 冲销，不能重复冲销"
+                )
+
+        # 防护：分红无 quantity 可逆
+        from praxis.core.models.transaction import TransactionType
+        if original.type == TransactionType.DIVIDEND:
+            raise LedgerError(f"分红交易 {tx_id} 不能冲销（无对手方），请用反向分红记录处理")
 
         # 创建冲销记录
         reverse_type = {
@@ -262,22 +238,18 @@ class FileLedger(LedgerInterface):
         return len(to_remove)
 
     def _rewrite_file(self):
-        """重写整个账本文件并重新计算链式哈希（仅在 delete/purge 时使用）"""
+        """重写整个账本文件（仅在 delete/purge 时使用）"""
         tmp_fd, tmp_path = tempfile.mkstemp(
             dir=self._path.parent, suffix=".tmp"
         )
         try:
             with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
-                # 按时间正序写入并重新链接哈希
+                # 按时间正序写入
                 sorted_txs = sorted(
                     self._index.values(),
                     key=lambda tx: tx.created_at,
                 )
-                prev_hash = None
                 for tx in sorted_txs:
-                    tx.prev_hash = prev_hash
-                    tx.tx_hash = tx.calculate_hash(prev_hash)
-                    prev_hash = tx.tx_hash
                     f.write(tx.to_jsonl() + "\n")
                 f.flush()
                 os.fsync(f.fileno())

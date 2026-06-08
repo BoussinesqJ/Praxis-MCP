@@ -1,5 +1,4 @@
 """E1.8 — 绩效计算器测试"""
-import os
 import pytest
 from pathlib import Path
 
@@ -9,7 +8,7 @@ from praxis.engine.performance import EnhancedPerformanceCalculator
 
 @pytest.fixture
 def workspace():
-    return os.environ.get("PRAXIS_WORKSPACE", ".")
+    return "C:/Users/77271/Desktop/Portfolio vault"
 
 
 @pytest.fixture

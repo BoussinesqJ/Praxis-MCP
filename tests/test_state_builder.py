@@ -1,5 +1,4 @@
 """E1.7 — 状态重建器测试"""
-import os
 import pytest
 import asyncio
 from pathlib import Path
@@ -12,7 +11,7 @@ from praxis.engine.data.provider import CachedDataProvider
 
 @pytest.fixture
 def workspace():
-    return os.environ.get("PRAXIS_WORKSPACE", ".")
+    return "C:/Users/77271/Desktop/Portfolio vault"
 
 
 @pytest.fixture

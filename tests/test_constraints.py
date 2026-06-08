@@ -6,6 +6,7 @@ from praxis.core.models.investor import InvestorProfile, InvestorConstraints, Ex
 from praxis.core.models.portfolio import Portfolio, AssetEntry
 from praxis.core.models.asset import AssetType, AssetCategory
 from praxis.core.models.state import PortfolioState, CashState
+from praxis.core.models.strategy import StrategyTemplate, RuleEntry
 
 
 @pytest.fixture
@@ -17,10 +18,6 @@ def investor():
         risk_level="C3-C4",
         style="balanced",
         constraints=InvestorConstraints(
-            banned_markets=[
-                {"id": "star_market", "desc": "科创板 (688/588)"},
-                {"id": "chinext", "desc": "创业板 (300/159)"},
-            ],
             banned_instruments=["leverage", "options", "short"],
             etf_exemption=True,
         ),
@@ -50,6 +47,37 @@ def portfolio():
 
 
 @pytest.fixture
+def strategy():
+    """策略模板（包含禁入板块规则）"""
+    return StrategyTemplate(
+        name="grid_value",
+        description="测试策略",
+        rules=[
+            RuleEntry(
+                rule="access_rules.blacklist_market",
+                params={"markets": ["star_market", "chinext"], "etf_exempt": True},
+            ),
+            RuleEntry(
+                rule="access_rules.blacklist_instrument",
+                params={"instruments": ["leverage", "options", "short"]},
+            ),
+            RuleEntry(
+                rule="execution_rules.min_transaction",
+                params={"min_amount_cny": 3000},
+            ),
+            RuleEntry(
+                rule="risk_rules.cash_floor",
+                params={"min_pct": 40},
+            ),
+            RuleEntry(
+                rule="risk_rules.position_cap",
+                params={"max_single_pct": 15},
+            ),
+        ],
+    )
+
+
+@pytest.fixture
 def state():
     return PortfolioState(
         investor_id="test",
@@ -63,8 +91,8 @@ def state():
 
 
 @pytest.fixture
-def checker(investor, portfolio):
-    return SimpleConstraintChecker(investor, portfolio)
+def checker(investor, portfolio, strategy):
+    return SimpleConstraintChecker(investor, portfolio, strategy=strategy)
 
 
 class TestBannedMarket:

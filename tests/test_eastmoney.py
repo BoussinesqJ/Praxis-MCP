@@ -55,11 +55,11 @@ class TestEastMoneyDataProvider:
     def provider(self):
         p = EastMoneyDataProvider()
         yield p
-        asyncio.run(p.close())
+        asyncio.get_event_loop().run_until_complete(p.close())
 
     def test_get_realtime_stock(self, provider):
         """测试股票实时行情"""
-        result = asyncio.run(
+        result = asyncio.get_event_loop().run_until_complete(
             provider.get_realtime_quote(["600995"])
         )
         assert "600995" in result
@@ -70,7 +70,7 @@ class TestEastMoneyDataProvider:
 
     def test_get_realtime_etf(self, provider):
         """测试 ETF 实时行情"""
-        result = asyncio.run(
+        result = asyncio.get_event_loop().run_until_complete(
             provider.get_realtime_quote(["510310"])
         )
         assert "510310" in result
@@ -80,7 +80,7 @@ class TestEastMoneyDataProvider:
 
     def test_get_realtime_fund(self, provider):
         """测试场外基金净值"""
-        result = asyncio.run(
+        result = asyncio.get_event_loop().run_until_complete(
             provider.get_realtime_quote(["016874"])
         )
         assert "016874" in result
@@ -89,14 +89,14 @@ class TestEastMoneyDataProvider:
 
     def test_get_realtime_batch(self, provider):
         """测试批量查询"""
-        result = asyncio.run(
+        result = asyncio.get_event_loop().run_until_complete(
             provider.get_realtime_quote(["600995", "510310"])
         )
         assert len(result) >= 1  # 至少一个成功
 
     def test_get_history_kline(self, provider):
         """测试历史K线"""
-        klines = asyncio.run(
+        klines = asyncio.get_event_loop().run_until_complete(
             provider.get_history_kline("600995", "day", 5)
         )
         assert len(klines) > 0
@@ -108,7 +108,7 @@ class TestEastMoneyDataProvider:
 
     def test_get_fund_nav(self, provider):
         """测试基金净值"""
-        nav = asyncio.run(
+        nav = asyncio.get_event_loop().run_until_complete(
             provider.get_fund_nav("016874")
         )
         assert nav["nav"] > 0
@@ -117,14 +117,14 @@ class TestEastMoneyDataProvider:
 
     def test_get_realtime_empty(self, provider):
         """测试空列表"""
-        result = asyncio.run(
+        result = asyncio.get_event_loop().run_until_complete(
             provider.get_realtime_quote([])
         )
         assert result == {}
 
     def test_price_accuracy(self, provider):
         """测试价格精度（验证除法因子）"""
-        result = asyncio.run(
+        result = asyncio.get_event_loop().run_until_complete(
             provider.get_realtime_quote(["600995", "510310"])
         )
         # 股票价格应该在合理范围内

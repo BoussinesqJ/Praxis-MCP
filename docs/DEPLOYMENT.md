@@ -31,7 +31,7 @@ pip install -e .
 
 ```bash
 # Windows
-set PRAXIS_WORKSPACE=你的实际路径\Portfolio vault
+set PRAXIS_WORKSPACE=C:\Users\77271\Desktop\Portfolio vault
 
 # macOS/Linux
 export PRAXIS_WORKSPACE="/你的实际路径/Portfolio vault"

@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from praxis.core.ledger import FileLedger
+from praxis.core.ledger import FileLedger, filter_active_transactions
 from praxis.core.state_builder import SimpleStateBuilder
 from praxis.engine.config_loader import YamlConfigLoader
 from praxis.engine.data.provider import CachedDataProvider
@@ -104,7 +104,7 @@ async def _rebuild_from_ledger(
     total_sell = 0
     total_dividend = 0
 
-    for tx in ledger.get_all():
+    for tx in filter_active_transactions(ledger.get_all()):
         ticker = tx.ticker
         if ticker not in positions_map:
             positions_map[ticker] = {"quantity": 0.0, "total_cost": 0.0, "realized_pnl": 0.0}

@@ -35,11 +35,6 @@ def _atomic_rewrite_jsonl(path: Path, records: list[Transaction]):
         raise e
 
 
-def _read_pending(pending_path: Path) -> tuple[list[Transaction], Transaction | None, str | None]:
-    """读取 pending 文件，返回 (其他记录, 目标记录, 错误信息)"""
-    if not pending_path.exists():
-        return [], None, "没有待审批的交易"
-    return [], None, None  # placeholder, actual logic below
 
 
 def get_ledger(ticker: str | None = None, limit: int = 100, workspace: str = ".") -> dict:
@@ -69,8 +64,6 @@ def add_transaction(
     auto_approve: bool = False,
     tags: list[str] | None = None,
     asset_type: str | None = None,
-    investor: str = "example",
-    portfolio: str = "demo",
     workspace: str = ".",
 ) -> dict:
     """添加交易记录
@@ -93,6 +86,13 @@ def add_transaction(
         if not tx_type:
             return {"success": False, "error": f"不支持的交易类型: {action}"}
 
+        # 验证决策 ID 存在性（引用完整性）
+        if decision_id:
+            from praxis.tools.decision import get_decision_record
+            decision_check = get_decision_record(decision_id, workspace)
+            if not decision_check.get("success"):
+                return {"success": False, "error": f"决策 {decision_id} 不存在，请先创建决策记录"}
+
         # 创建交易记录
         tx = Transaction(
             tx_id="",  # 由 ledger 生成
@@ -106,23 +106,15 @@ def add_transaction(
             status=TransactionStatus.CONFIRMED if auto_approve else TransactionStatus.PENDING,
             tags=tags or [],
             asset_type=asset_type,
-            investor_id=investor,
-            portfolio_id=portfolio,
         )
 
         if auto_approve:
             # 自动审批：直接写入账本
             ledger = _get_ledger(workspace)
             tx_id = ledger.append(tx)
-            
-            # 链接决策与交易
-            if decision_id:
-                try:
-                    from praxis.tools.decision import _get_recorder
-                    recorder = _get_recorder(workspace)
-                    recorder.link_transaction(decision_id, tx_id)
-                except Exception:
-                    pass
+
+            # 事件驱动：交易完成后触发进化评估（非阻塞）
+            _trigger_post_transaction(workspace, ticker, action)
 
             return {
                 "success": True,
@@ -197,15 +189,6 @@ def approve_transaction(tx_id: str, workspace: str = ".") -> dict:
         ledger = _get_ledger(workspace)
         target_tx.tx_id = ""  # 让 ledger 生成正式 ID
         new_tx_id = ledger.append(target_tx)
-
-        # 链接决策与交易
-        if target_tx.decision_id:
-            try:
-                from praxis.tools.decision import _get_recorder
-                recorder = _get_recorder(workspace)
-                recorder.link_transaction(target_tx.decision_id, new_tx_id)
-            except Exception:
-                pass
 
         # 原子重写 pending 文件（移除已审批的）
         _atomic_rewrite_jsonl(pending_path, pending_txs)
@@ -355,3 +338,41 @@ def purge_ledger(tag: str | None = None, confirm: bool = False, workspace: str =
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def _trigger_post_transaction(workspace: str, ticker: str, action: str):
+    """交易完成后触发进化评估和规则学习（非阻塞，失败不影响交易结果）"""
+    try:
+        from praxis.tools.evolution import auto_evolve
+        # 尝试获取策略名称（从 portfolio 配置）
+        from praxis.engine.config_loader import YamlConfigLoader
+        loader = YamlConfigLoader(workspace)
+        # 扫描投资者目录获取默认策略
+        investors_dir = Path(workspace) / "investors"
+        for inv_dir in sorted(investors_dir.iterdir()):
+            if not inv_dir.is_dir() or inv_dir.name.startswith(("_", ".")):
+                continue
+            profile_path = inv_dir / "profile.yaml"
+            if not profile_path.exists():
+                continue
+            # 找到第一个 portfolio
+            portfolios_dir = inv_dir / "portfolios"
+            if not portfolios_dir.exists():
+                continue
+            for port_dir in sorted(portfolios_dir.iterdir()):
+                if not port_dir.is_dir():
+                    continue
+                port_path = port_dir / "portfolio.yaml"
+                if not port_path.exists():
+                    continue
+                import yaml
+                pdata = yaml.safe_load(port_path.read_text(encoding="utf-8"))
+                strategy = (pdata.get("portfolio", pdata)).get("strategy_template", "grid_value")
+                # 触发进化评估
+                auto_evolve(strategy, inv_dir.name, port_dir.name, workspace)
+                # 触发规则学习
+                from praxis.tools.adaptive import learn_rules
+                learn_rules(workspace)
+                return  # 只处理第一个投资者+组合
+    except Exception:
+        pass  # 触发失败不影响交易结果

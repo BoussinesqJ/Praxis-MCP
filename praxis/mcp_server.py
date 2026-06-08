@@ -6,44 +6,26 @@ import os
 import time
 from mcp.server.fastmcp import FastMCP
 
-from praxis.tools.portfolio import get_portfolio, get_asset_detail
-from praxis.tools.market import get_market_data
-from praxis.tools.engine import reconcile, check_constraints
-from praxis.tools.ledger import get_ledger, add_transaction, approve_transaction, reverse_transaction, delete_transaction, purge_ledger, reject_transaction, list_pending_transactions
-from praxis.tools.state import get_state
-from praxis.tools.decision import get_decision_record, list_decisions, create_decision
-from praxis.tools.performance import get_performance
-from praxis.tools.strategy import get_strategy, list_strategies, update_portfolio, approve_portfolio_update
-from praxis.tools.evolution import evaluate_evolution, evolve_strategy
-from praxis.tools.benchmark import get_benchmark_data, list_benchmarks
-from praxis.tools.nav import record_nav, get_nav_snapshot, get_nav_history
-from praxis.tools.ai_tracking import get_ai_tracking
-from praxis.tools.teams import list_teams, get_team_prompt, compose_team_prompt, list_output_templates, get_output_template, update_output_template, approve_output_template_update, create_output_template
-from praxis.tools.review import fill_reviews, get_review_summary, get_confidence_calibration
-from praxis.tools.backtest import run_backtest, compare_strategy_versions
-from praxis.tools.drift import verify_ledger_integrity, detect_ai_drift
-from praxis.tools.version_compare import compare_versions
-from praxis.tools.grayscale import prepare_grayscale, approve_grayscale
-from praxis.tools.friction import calculate_fee, calculate_slippage, check_trading_time, get_confirm_date
-from praxis.tools.data_quality import check_quote_quality, clean_quote_data, get_quality_report
-from praxis.tools.prompt_versioning import list_prompt_versions, get_prompt_version, create_prompt_version, rollback_prompt, check_prompt_safety, get_version_diff
-from praxis.tools.investor import create_investor, create_portfolio, init_investor
-from praxis.tools.summary import get_portfolio_summary
-from praxis.tools.workspace import discover_workspace
-from praxis.core.logger import get_logger, init_logger
-
 # 创建 MCP Server
 mcp = FastMCP("PRAXIS", json_response=True)
 
 # 获取工作目录
 WORKSPACE = os.environ.get("PRAXIS_WORKSPACE", ".")
 
-# 初始化日志
-init_logger(log_dir=os.path.join(WORKSPACE, "data", "logs"))
+_logger_initialized = False
+
+def _ensure_logger():
+    global _logger_initialized
+    if not _logger_initialized:
+        from praxis.core.logger import init_logger
+        init_logger(log_dir=os.path.join(WORKSPACE, "data", "logs"))
+        _logger_initialized = True
 
 
 async def _log_tool_call(tool_name: str, func, *args, **kwargs):
     """记录工具调用的辅助函数"""
+    _ensure_logger()
+    from praxis.core.logger import get_logger
     logger = get_logger()
     start_time = time.time()
     try:
@@ -74,6 +56,7 @@ async def get_portfolio_tool(investor: str, portfolio: str) -> dict:
     """读取投资组合配置
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.portfolio import get_portfolio
     return await _log_tool_call("get_portfolio", get_portfolio, investor=investor, portfolio=portfolio, workspace=WORKSPACE)
 
 
@@ -82,12 +65,14 @@ async def get_asset_detail_tool(investor: str, portfolio: str, ticker: str) -> d
     """读取单个标的详情
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.portfolio import get_asset_detail
     return await _log_tool_call("get_asset_detail", get_asset_detail, investor=investor, portfolio=portfolio, ticker=ticker, workspace=WORKSPACE)
 
 
 @mcp.tool()
 async def get_market_data_tool(tickers: list[str]) -> dict:
     """获取实时行情数据"""
+    from praxis.tools.market import get_market_data
     return await get_market_data(tickers)
 
 
@@ -96,6 +81,7 @@ async def reconcile_tool(investor: str, portfolio: str, nav: float | None = None
     """对账计算（dry-run 模式）
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.engine import reconcile
     return await reconcile(investor, portfolio, nav, WORKSPACE)
 
 
@@ -104,6 +90,7 @@ async def check_constraints_tool(investor: str, portfolio: str, action: str, tic
     """检查交易约束
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.engine import check_constraints
     return check_constraints(investor, portfolio, action, ticker, amount, WORKSPACE)
 
 
@@ -117,12 +104,14 @@ async def get_state_tool(investor: str, portfolio: str, infer_from_ledger: bool 
         infer_from_ledger: 纯 ledger 推断模式（不需要配置文件，适合初始化阶段）
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.state import get_state
     return await get_state(investor, portfolio, infer_from_ledger, WORKSPACE)
 
 
 @mcp.tool()
 async def get_ledger_tool(ticker: str | None = None, limit: int = 100) -> dict:
     """查询交易记录"""
+    from praxis.tools.ledger import get_ledger
     return get_ledger(ticker=ticker, limit=limit, workspace=WORKSPACE)
 
 
@@ -138,8 +127,6 @@ async def add_transaction_tool(
     auto_approve: bool = False,
     tags: list[str] | None = None,
     asset_type: str | None = None,
-    investor: str = "example",
-    portfolio: str = "demo",
 ) -> dict:
     """添加交易记录（需审批）
 
@@ -154,14 +141,12 @@ async def add_transaction_tool(
         auto_approve: 自动审批（跳过审批流程）
         tags: 标签列表（如 ["test"] ["migration"] ["real"]），绩效计算时可按标签过滤
         asset_type: 资产类型（stock/etf/offshore_fund），用于策略规则精确匹配
-        investor: 投资者 ID
-        portfolio: 组合 ID
     """
+    from praxis.tools.ledger import add_transaction
     return add_transaction(
         ticker=ticker, action=action, quantity=quantity, price=price,
         fee=fee, decision_id=decision_id, idempotency_key=idempotency_key,
         auto_approve=auto_approve, tags=tags, asset_type=asset_type,
-        investor=investor, portfolio=portfolio,
         workspace=WORKSPACE,
     )
 
@@ -169,6 +154,7 @@ async def add_transaction_tool(
 @mcp.tool()
 async def reverse_transaction_tool(tx_id: str, reason: str) -> dict:
     """反向冲销交易"""
+    from praxis.tools.ledger import reverse_transaction
     return reverse_transaction(tx_id, reason, WORKSPACE)
 
 
@@ -178,6 +164,7 @@ async def delete_transaction_tool(tx_id: str) -> dict:
 
     警告：破坏 append-only 语义，正常业务请使用 reverse_transaction_tool。
     """
+    from praxis.tools.ledger import delete_transaction
     return delete_transaction(tx_id, WORKSPACE)
 
 
@@ -189,6 +176,7 @@ async def purge_ledger_tool(tag: str | None = None, confirm: bool = False) -> di
         tag: 如果指定，仅删除带有该标签的记录；None 则清空全部
         confirm: 必须为 True 才执行（安全确认）
     """
+    from praxis.tools.ledger import purge_ledger
     return purge_ledger(tag, confirm, WORKSPACE)
 
 
@@ -199,6 +187,7 @@ async def approve_transaction_tool(tx_id: str) -> dict:
     Args:
         tx_id: 待审批交易的 ID（格式: tx-YYYYMMDD-pending-NNN）
     """
+    from praxis.tools.ledger import approve_transaction
     return approve_transaction(tx_id, WORKSPACE)
 
 
@@ -210,12 +199,14 @@ async def reject_transaction_tool(tx_id: str, reason: str) -> dict:
         tx_id: 待审批交易的 ID
         reason: 拒绝原因
     """
+    from praxis.tools.ledger import reject_transaction
     return reject_transaction(tx_id, reason, WORKSPACE)
 
 
 @mcp.tool()
 async def list_pending_transactions_tool() -> dict:
     """列出所有待审批的交易"""
+    from praxis.tools.ledger import list_pending_transactions
     return list_pending_transactions(WORKSPACE)
 
 
@@ -230,18 +221,21 @@ async def get_portfolio_summary_tool(investor: str, portfolio: str) -> dict:
         portfolio: 组合 ID
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.summary import get_portfolio_summary
     return await get_portfolio_summary(investor, portfolio, WORKSPACE)
 
 
 @mcp.tool()
 async def get_decision_record_tool(decision_id: str) -> dict:
     """获取决策记录"""
+    from praxis.tools.decision import get_decision_record
     return get_decision_record(decision_id, WORKSPACE)
 
 
 @mcp.tool()
 async def list_decisions_tool(status: str | None = None, limit: int = 50) -> dict:
     """列出决策记录"""
+    from praxis.tools.decision import list_decisions
     return list_decisions(status=status, limit=limit, workspace=WORKSPACE)
 
 
@@ -255,6 +249,7 @@ async def create_decision_tool(
     price_range: list[float] | None = None,
 ) -> dict:
     """创建决策记录"""
+    from praxis.tools.decision import create_decision
     return create_decision(
         ticker=ticker, action=action, confidence=confidence,
         reasoning=reasoning, quantity=quantity, price_range=price_range,
@@ -282,18 +277,21 @@ async def get_performance_tool(
         ticker: 仅计算指定标的的绩效（如 "600995"）
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.performance import get_performance
     return await get_performance(investor, portfolio, exclude_reversed, exclude_tags, include_tags, ticker, WORKSPACE)
 
 
 @mcp.tool()
 async def get_strategy_tool(strategy_name: str) -> dict:
     """获取策略详情"""
+    from praxis.tools.strategy import get_strategy
     return get_strategy(strategy_name, WORKSPACE)
 
 
 @mcp.tool()
 async def list_strategies_tool() -> dict:
     """列出所有策略模板"""
+    from praxis.tools.strategy import list_strategies
     return list_strategies(WORKSPACE)
 
 
@@ -307,20 +305,8 @@ async def update_portfolio_tool(
     """修改组合配置（需审批）
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.strategy import update_portfolio
     return update_portfolio(investor, portfolio, field, value, WORKSPACE)
-
-
-@mcp.tool()
-async def approve_portfolio_update_tool(
-    investor: str,
-    portfolio: str,
-    field: str,
-    value: str,
-) -> dict:
-    """审批并通过组合配置修改
-        提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
-    """
-    return approve_portfolio_update(investor, portfolio, field, value, WORKSPACE)
 
 
 @mcp.tool()
@@ -332,6 +318,7 @@ async def evaluate_evolution_tool(
     """评估进化维度
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.evolution import evaluate_evolution
     return evaluate_evolution(strategy_name, investor, portfolio, WORKSPACE)
 
 
@@ -344,18 +331,36 @@ async def evolve_strategy_tool(
     """进化策略（需审批）
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.evolution import evolve_strategy
     return evolve_strategy(strategy_name, investor, portfolio, WORKSPACE)
+
+
+@mcp.tool()
+async def auto_evolve_tool(
+    strategy_name: str,
+    investor: str,
+    portfolio: str,
+) -> dict:
+    """一键自进化：评估 → 建议 → 备份 → 待审批
+
+    事件驱动触发：每笔交易后 / 每日 NAV 记录后 / 哨兵状态变更时。
+    结果自动落盘到 deliverables/evolution/。
+    """
+    from praxis.tools.evolution import auto_evolve
+    return auto_evolve(strategy_name, investor, portfolio, WORKSPACE)
 
 
 @mcp.tool()
 async def get_benchmark_data_tool(index_code: str, days: int = 60) -> dict:
     """获取基准指数数据"""
+    from praxis.tools.benchmark import get_benchmark_data
     return await get_benchmark_data(index_code, days)
 
 
 @mcp.tool()
 async def list_benchmarks_tool() -> dict:
     """列出支持的基准指数"""
+    from praxis.tools.benchmark import list_benchmarks
     return list_benchmarks()
 
 
@@ -373,6 +378,7 @@ async def record_nav_tool(
     """记录当日净值
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.nav import record_nav
     return record_nav(investor, portfolio, nav, total_assets, positions_value, cash, benchmark_nav, benchmark_code, WORKSPACE)
 
 
@@ -381,6 +387,7 @@ async def get_nav_snapshot_tool(investor: str, portfolio: str) -> dict:
     """获取净值快照
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.nav import get_nav_snapshot
     return await get_nav_snapshot(investor, portfolio, WORKSPACE)
 
 
@@ -389,18 +396,21 @@ async def get_nav_history_tool(investor: str, portfolio: str, days: int = 30) ->
     """获取净值历史
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
+    from praxis.tools.nav import get_nav_history
     return get_nav_history(investor, portfolio, days, WORKSPACE)
 
 
 @mcp.tool()
 async def get_ai_tracking_tool(team: str | None = None) -> dict:
     """获取 AI 建议命中率"""
+    from praxis.tools.ai_tracking import get_ai_tracking
     return get_ai_tracking(team, WORKSPACE)
 
 
 @mcp.tool()
 async def list_teams_tool() -> dict:
     """列出所有可用的 AI 团队（ASRG/大师圆桌/交易团队）"""
+    from praxis.tools.teams import list_teams
     return list_teams(WORKSPACE)
 
 
@@ -414,6 +424,7 @@ async def get_team_prompt_tool(team_name: str) -> dict:
     Returns:
         团队 Prompt 内容
     """
+    from praxis.tools.teams import get_team_prompt
     return get_team_prompt(team_name, WORKSPACE)
 
 
@@ -433,12 +444,14 @@ async def compose_team_prompt_tool(
     Returns:
         组合后的完整 Prompt
     """
+    from praxis.tools.teams import compose_team_prompt
     return compose_team_prompt(team_name, strategy_name, investor_id, WORKSPACE)
 
 
 @mcp.tool()
 async def list_output_templates_tool() -> dict:
     """列出所有输出模板（ASRG/大师圆桌/交易团队/综合日报）"""
+    from praxis.tools.teams import list_output_templates
     return list_output_templates(WORKSPACE)
 
 
@@ -452,6 +465,7 @@ async def get_output_template_tool(template_name: str) -> dict:
     Returns:
         输出模板内容
     """
+    from praxis.tools.teams import get_output_template
     return get_output_template(template_name, WORKSPACE)
 
 
@@ -471,6 +485,7 @@ async def update_output_template_tool(
     Returns:
         变更预览和备份信息
     """
+    from praxis.tools.teams import update_output_template
     return update_output_template(template_name, new_content, reason, WORKSPACE)
 
 
@@ -488,6 +503,7 @@ async def approve_output_template_update_tool(
     Returns:
         更新结果
     """
+    from praxis.tools.teams import approve_output_template_update
     return approve_output_template_update(template_name, new_content, WORKSPACE)
 
 
@@ -505,18 +521,21 @@ async def create_output_template_tool(
     Returns:
         创建结果
     """
+    from praxis.tools.teams import create_output_template
     return create_output_template(template_name, content, WORKSPACE)
 
 
 @mcp.tool()
 async def fill_reviews_tool() -> dict:
     """自动回填待复盘的决策（5d/20d/60d）"""
+    from praxis.tools.review import fill_reviews
     return await fill_reviews(WORKSPACE)
 
 
 @mcp.tool()
 async def get_review_summary_tool() -> dict:
     """获取复盘汇总（待复盘数量/已复盘数量）"""
+    from praxis.tools.review import get_review_summary
     return get_review_summary(WORKSPACE)
 
 
@@ -530,6 +549,7 @@ async def get_confidence_calibration_tool(team: str) -> dict:
     Returns:
         信心度校准结果
     """
+    from praxis.tools.review import get_confidence_calibration
     return get_confidence_calibration(team, WORKSPACE)
 
 
@@ -539,7 +559,6 @@ async def run_backtest_tool(
     investor: str,
     portfolio: str,
     days: int = 90,
-    rule_based: bool = False,
 ) -> dict:
     """运行策略回测
 
@@ -548,36 +567,13 @@ async def run_backtest_tool(
         investor: 投资者ID
         portfolio: 组合ID
         days: 回测天数
-        rule_based: 是否进行基于规则和网格触发的历史日K线模拟回测，默认为 False (执行简单净值回测)
 
     Returns:
         回测结果
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
-    return await run_backtest(strategy_name, investor, portfolio, days, WORKSPACE, rule_based=rule_based)
-
-
-@mcp.tool()
-def verify_ledger_integrity_tool() -> dict:
-    """审计检查交易账本的 SHA-256 链接及哈希完整性，防篡改审计
-
-    Returns:
-        包含审计结果 (passed) 和错误列表 (errors)
-    """
-    return verify_ledger_integrity(WORKSPACE)
-
-
-@mcp.tool()
-def detect_ai_drift_tool(team_name: str | None = None) -> dict:
-    """计算 AI 决策的 Expected Calibration Error (ECE) 和 Brier score，并给出风控预警状态
-
-    Args:
-        team_name: 可选，指定具体 AI 团队名称（如不指定，则计算全局决策置信度漂移）
-
-    Returns:
-        包含漂移分析指标 (ece, brier_score, status) 以及建议风控动作
-    """
-    return detect_ai_drift(team_name=team_name, workspace=WORKSPACE)
+    from praxis.tools.backtest import run_backtest
+    return await run_backtest(strategy_name, investor, portfolio, days, WORKSPACE)
 
 
 @mcp.tool()
@@ -596,6 +592,7 @@ async def compare_strategy_versions_tool(
     Returns:
         策略对比结果
     """
+    from praxis.tools.backtest import compare_strategy_versions
     return await compare_strategy_versions(strategy_a, strategy_b, days, WORKSPACE)
 
 
@@ -613,6 +610,7 @@ async def compare_versions_tool(
     Returns:
         策略版本对比结果
     """
+    from praxis.tools.version_compare import compare_versions
     return await compare_versions(strategy_a, strategy_b, WORKSPACE)
 
 
@@ -622,7 +620,6 @@ async def prepare_grayscale_tool(
     change_description: str,
     risk_level: str = "medium",
     validation_days: int = 30,
-    new_content: str | None = None,
 ) -> dict:
     """准备策略灰度验证
 
@@ -631,12 +628,12 @@ async def prepare_grayscale_tool(
         change_description: 变更描述
         risk_level: 风险等级（low/medium/high）
         validation_days: 验证天数
-        new_content: 新的策略内容
 
     Returns:
         灰度验证结果
     """
-    return prepare_grayscale(strategy_name, change_description, risk_level, validation_days, new_content, WORKSPACE)
+    from praxis.tools.grayscale import prepare_grayscale
+    return prepare_grayscale(strategy_name, change_description, risk_level, validation_days, WORKSPACE)
 
 
 @mcp.tool()
@@ -655,6 +652,7 @@ async def approve_grayscale_tool(
     Returns:
         应用结果
     """
+    from praxis.tools.grayscale import approve_grayscale
     return approve_grayscale(strategy_name, backup_path, new_content, WORKSPACE)
 
 
@@ -678,6 +676,7 @@ async def calculate_fee_tool(
     Returns:
         费用明细
     """
+    from praxis.tools.friction import calculate_fee
     return calculate_fee(ticker, asset_type, action, quantity, price, WORKSPACE)
 
 
@@ -699,6 +698,7 @@ async def calculate_slippage_tool(
     Returns:
         滑点明细
     """
+    from praxis.tools.friction import calculate_slippage
     return calculate_slippage(price, action, volume, volatility, WORKSPACE)
 
 
@@ -716,6 +716,7 @@ async def check_trading_time_tool(
     Returns:
         交易时间信息
     """
+    from praxis.tools.friction import check_trading_time
     return check_trading_time(timestamp, asset_type, WORKSPACE)
 
 
@@ -733,6 +734,7 @@ async def get_confirm_date_tool(
     Returns:
         确认日期
     """
+    from praxis.tools.friction import get_confirm_date
     return get_confirm_date(trade_date, asset_type, WORKSPACE)
 
 
@@ -750,6 +752,7 @@ async def check_quote_quality_tool(
     Returns:
         质量检查结果
     """
+    from praxis.tools.data_quality import check_quote_quality
     return check_quote_quality(ticker, data, WORKSPACE)
 
 
@@ -767,6 +770,7 @@ async def clean_quote_data_tool(
     Returns:
         清洗后的数据
     """
+    from praxis.tools.data_quality import clean_quote_data
     return clean_quote_data(ticker, data, WORKSPACE)
 
 
@@ -777,6 +781,7 @@ async def get_quality_report_tool() -> dict:
     Returns:
         质量报告
     """
+    from praxis.tools.data_quality import get_quality_report
     return get_quality_report(WORKSPACE)
 
 
@@ -792,6 +797,7 @@ async def list_prompt_versions_tool(
     Returns:
         版本列表
     """
+    from praxis.tools.prompt_versioning import list_prompt_versions
     return list_prompt_versions(prompt_name, WORKSPACE)
 
 
@@ -809,6 +815,7 @@ async def get_prompt_version_tool(
     Returns:
         Prompt 内容
     """
+    from praxis.tools.prompt_versioning import get_prompt_version
     return get_prompt_version(prompt_name, version, WORKSPACE)
 
 
@@ -828,6 +835,7 @@ async def create_prompt_version_tool(
     Returns:
         新版本信息
     """
+    from praxis.tools.prompt_versioning import create_prompt_version
     return create_prompt_version(prompt_name, content, description, WORKSPACE)
 
 
@@ -847,6 +855,7 @@ async def rollback_prompt_tool(
     Returns:
         回滚后的版本信息
     """
+    from praxis.tools.prompt_versioning import rollback_prompt
     return rollback_prompt(prompt_name, target_version, reason, WORKSPACE)
 
 
@@ -862,6 +871,7 @@ async def check_prompt_safety_tool(
     Returns:
         安全检查结果
     """
+    from praxis.tools.prompt_versioning import check_prompt_safety
     return check_prompt_safety(content, WORKSPACE)
 
 
@@ -881,6 +891,7 @@ async def get_version_diff_tool(
     Returns:
         差异信息
     """
+    from praxis.tools.prompt_versioning import get_version_diff
     return get_version_diff(prompt_name, from_version, to_version, WORKSPACE)
 
 
@@ -903,6 +914,7 @@ async def create_investor_tool(
         style: 投资风格
         max_drawdown_pct: 最大回撤容忍度(%)
     """
+    from praxis.tools.investor import create_investor
     return create_investor(investor_id, name, capital_cny, risk_level, style, max_drawdown_pct, WORKSPACE)
 
 
@@ -925,6 +937,7 @@ async def create_portfolio_tool(
         description: 组合描述
         assets: 资产列表 [{ticker, name, type, category, target_weight_pct}]
     """
+    from praxis.tools.investor import create_portfolio
     return create_portfolio(investor_id, portfolio_id, strategy_type, strategy_template, description, assets, WORKSPACE)
 
 
@@ -961,6 +974,7 @@ async def init_investor_tool(
         strategy_template: 策略模板名称
         benchmark: 基准指数代码（可选）
     """
+    from praxis.tools.investor import init_investor
     return init_investor(
         investor_id, investor_name, capital_cny, portfolio_id, positions, cash,
         risk_level, style, max_drawdown_pct, strategy_type, strategy_template,
@@ -972,6 +986,7 @@ async def init_investor_tool(
 async def discover_workspace_tool() -> dict:
     """发现 workspace 全景：投资者、组合、持仓、数据状态、推荐下一步操作。
     零参数，首次连接时调用。"""
+    from praxis.tools.workspace import discover_workspace
     return discover_workspace(WORKSPACE)
 
 
@@ -979,6 +994,126 @@ async def discover_workspace_tool() -> dict:
 def workspace_discovery_resource() -> dict:
     """Workspace 元数据（MCP Resource）：支持 Resources 协议的客户端可在连接握手时自动读取。"""
     return discover_workspace(WORKSPACE)
+
+
+@mcp.tool()
+async def learn_rules_tool() -> dict:
+    """从历史数据中学习自适应规则
+
+    分析交易记录和 NAV 历史，自动生成规则草案。
+    所有规则经安全扫描后写入 teams/adaptive/。
+    """
+    from praxis.tools.adaptive import learn_rules
+    return learn_rules(WORKSPACE)
+
+
+@mcp.tool()
+async def list_learned_rules_tool() -> dict:
+    """列出所有已学习的自适应规则"""
+    from praxis.tools.adaptive import list_learned_rules
+    return list_learned_rules(WORKSPACE)
+
+
+@mcp.tool()
+async def approve_rule_tool(rule_id: str) -> dict:
+    """审批通过自适应规则（draft → active）
+
+    Args:
+        rule_id: 规则 ID
+    """
+    from praxis.tools.adaptive import approve_rule
+    return approve_rule(rule_id, WORKSPACE)
+
+
+@mcp.tool()
+async def reject_rule_tool(rule_id: str) -> dict:
+    """拒绝自适应规则
+
+    Args:
+        rule_id: 规则 ID
+    """
+    from praxis.tools.adaptive import reject_rule
+    return reject_rule(rule_id, WORKSPACE)
+
+
+@mcp.tool()
+async def record_evolution_memory_tool(
+    trigger_event: str,
+    strategy_name: str,
+    evaluation_summary: str,
+) -> dict:
+    """记录一次进化记忆
+
+    Args:
+        trigger_event: 触发事件（transaction/nav_record/manual）
+        strategy_name: 策略名称
+        evaluation_summary: 评估摘要
+    """
+    from praxis.tools.memory import record_evolution_memory
+    return record_evolution_memory(trigger_event, strategy_name, evaluation_summary, workspace=WORKSPACE)
+
+
+@mcp.tool()
+async def get_evolution_timeline_tool(strategy_name: str) -> dict:
+    """获取策略进化时间线
+
+    Args:
+        strategy_name: 策略名称
+    """
+    from praxis.tools.memory import get_evolution_timeline
+    return get_evolution_timeline(strategy_name, WORKSPACE)
+
+
+@mcp.tool()
+async def query_evolution_memory_tool(situation: str, limit: int = 5) -> dict:
+    """查询类似情况的历史进化记录
+
+    Args:
+        situation: 描述当前情况的关键词
+        limit: 返回结果数量上限
+    """
+    from praxis.tools.memory import query_evolution_memory
+    return query_evolution_memory(situation, limit, WORKSPACE)
+
+
+@mcp.tool()
+async def record_agent_decision_tool(
+    agent_id: str,
+    ticker: str,
+    action: str,
+    confidence: float,
+    reasoning: str,
+) -> dict:
+    """记录 Agent 决策（标准化接口）
+
+    Args:
+        agent_id: Agent 标识（reasonix/gemini/claude）
+        ticker: 标的代码
+        action: 建议动作（buy/sell/hold/watch）
+        confidence: 置信度（0.0-1.0）
+        reasoning: 决策理由
+    """
+    from praxis.tools.agent_tracker import record_agent_decision
+    return record_agent_decision(agent_id, ticker, action, confidence, reasoning, workspace=WORKSPACE)
+
+
+@mcp.tool()
+async def check_consensus_tool(ticker: str, min_agents: int = 2) -> dict:
+    """检查多 Agent 共识
+
+    Args:
+        ticker: 标的代码
+        min_agents: 最低共识 Agent 数
+    """
+    from praxis.tools.agent_tracker import check_consensus
+    return check_consensus(ticker, min_agents, WORKSPACE)
+
+
+@mcp.tool()
+async def rank_agents_tool() -> dict:
+    """排名所有 Agent（按决策数量和平均置信度）"""
+    from praxis.tools.agent_tracker import rank_agents
+    return rank_agents(WORKSPACE)
 
 
 def main():

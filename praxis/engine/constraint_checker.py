@@ -6,14 +6,16 @@ from praxis.core.models.state import PortfolioState
 from praxis.core.models.investor import InvestorProfile
 from praxis.core.models.portfolio import Portfolio
 from praxis.core.models.asset import AssetType
+from praxis.core.models.strategy import StrategyTemplate
 
 
 class SimpleConstraintChecker(ConstraintChecker):
-    """简单约束检查器（R1 阶段）"""
+    """约束检查器（策略驱动）"""
 
-    def __init__(self, investor: InvestorProfile, portfolio: Portfolio):
+    def __init__(self, investor: InvestorProfile, portfolio: Portfolio, strategy: StrategyTemplate | None = None):
         self._investor = investor
         self._portfolio = portfolio
+        self._strategy = strategy
 
     def check(self, state: PortfolioState, action: str, ticker: str, **kwargs) -> list[dict]:
         """检查约束
@@ -50,15 +52,34 @@ class SimpleConstraintChecker(ConstraintChecker):
         return results
 
     def _check_banned_market(self, ticker: str) -> dict:
-        """检查禁入板块"""
+        """检查禁入板块（策略驱动）"""
         # 科创板: 688xxx, 588xxx
         # 创业板: 300xxx, 159xxx
         is_star = ticker.startswith("688") or ticker.startswith("588")
         is_chinext = ticker.startswith("300") or ticker.startswith("159")
 
-        # 检查 ETF 豁免
-        is_etf = ticker.startswith("5") or ticker.startswith("1")
-        if is_etf and self._investor.constraints.etf_exemption:
+        if not is_star and not is_chinext:
+            return {
+                "rule": "access_rules.blacklist_market",
+                "level": "advisory",
+                "message": f"标的 {ticker} 不在禁入板块",
+                "passed": True,
+            }
+
+        # 从策略规则读取禁入板块配置
+        banned_markets: list[str] = []
+        etf_exempt = True
+        if self._strategy:
+            for rule in self._strategy.rules:
+                if rule.rule == "access_rules.blacklist_market":
+                    banned_markets = rule.params.get("markets", [])
+                    etf_exempt = rule.params.get("etf_exempt", True)
+                    break
+
+        # ETF 豁免检查（精确前缀匹配）
+        etf_prefixes = ("510", "512", "513", "515", "516", "588", "159", "160")
+        is_etf = any(ticker.startswith(p) for p in etf_prefixes)
+        if is_etf and etf_exempt:
             return {
                 "rule": "access_rules.blacklist_market",
                 "level": "advisory",
@@ -66,35 +87,67 @@ class SimpleConstraintChecker(ConstraintChecker):
                 "passed": True,
             }
 
-        if is_star:
-            banned = any(m.id == "star_market" for m in self._investor.constraints.banned_markets)
-            return {
-                "rule": "access_rules.blacklist_market",
-                "level": "hard_block" if banned else "advisory",
-                "message": f"科创板标的 {ticker}" + (" 禁止买入" if banned else ""),
-                "passed": not banned,
-            }
-
-        if is_chinext:
-            banned = any(m.id == "chinext" for m in self._investor.constraints.banned_markets)
-            return {
-                "rule": "access_rules.blacklist_market",
-                "level": "hard_block" if banned else "advisory",
-                "message": f"创业板标的 {ticker}" + (" 禁止买入" if banned else ""),
-                "passed": not banned,
-            }
+        # 判断是否在禁入列表
+        market_id = "star_market" if is_star else "chinext"
+        banned = market_id in banned_markets
 
         return {
             "rule": "access_rules.blacklist_market",
-            "level": "advisory",
-            "message": f"标的 {ticker} 不在禁入板块",
-            "passed": True,
+            "level": "hard_block" if banned else "advisory",
+            "message": f"{'科创板' if is_star else '创业板'}标的 {ticker}" + (" → hard_block 禁止买入" if banned else ""),
+            "passed": not banned,
         }
 
     def _check_banned_instrument(self, ticker: str) -> dict:
-        """检查禁入工具"""
-        # 简化检查：杠杆、期权、做空
-        # 实际需要根据标的类型判断
+        """检查禁入工具类型（策略驱动）"""
+        banned_instruments: list[str] = []
+        if self._strategy:
+            for rule in self._strategy.rules:
+                if rule.rule == "access_rules.blacklist_instrument":
+                    banned_instruments = rule.params.get("instruments", [])
+                    break
+
+        if not banned_instruments:
+            return {
+                "rule": "access_rules.blacklist_instrument",
+                "level": "advisory",
+                "message": f"标的 {ticker} 无禁入工具规则",
+                "passed": True,
+            }
+
+        # ETF 豁免：ETF 不受杠杆/做空禁令约束
+        # 510xxx/512xxx/513xxx/515xxx/516xxx/588xxx = A股ETF
+        # 159xxx = 创业板ETF / 160xxx = 混合型基金
+        # 150xxx = 分级基金B（杠杆！不享受ETF豁免）
+        etf_prefixes = ("510", "512", "513", "515", "516", "588", "159", "160")
+        is_etf = any(ticker.startswith(p) for p in etf_prefixes)
+        if is_etf:
+            return {
+                "rule": "access_rules.blacklist_instrument",
+                "level": "advisory",
+                "message": f"ETF {ticker} 不受工具禁令约束",
+                "passed": True,
+            }
+
+        # 检测杠杆标的：B 级基金（150xxx）、分级基金 A/B
+        is_leverage = ticker.startswith("150")
+        # 检测期权：期权代码通常以特定前缀开头
+        is_option = False  # 需要更精确的期权代码识别，目前无可靠前缀
+
+        violations = []
+        if "leverage" in banned_instruments and is_leverage:
+            violations.append("杠杆工具")
+        if "options" in banned_instruments and is_option:
+            violations.append("期权工具")
+
+        if violations:
+            return {
+                "rule": "access_rules.blacklist_instrument",
+                "level": "hard_block",
+                "message": f"标的 {ticker} → hard_block 禁入: {', '.join(violations)}",
+                "passed": False,
+            }
+
         return {
             "rule": "access_rules.blacklist_instrument",
             "level": "advisory",
@@ -114,9 +167,14 @@ class SimpleConstraintChecker(ConstraintChecker):
         }
 
     def _check_cash_floor(self, state: PortfolioState, amount: float) -> dict:
-        """检查现金底线"""
-        # 从策略模板获取现金底线比例（默认 40%）
+        """检查现金底线（策略驱动）"""
         cash_floor_pct = 0.40
+        if self._strategy:
+            for rule in self._strategy.rules:
+                if rule.rule == "risk_rules.cash_floor":
+                    cash_floor_pct = rule.params.get("min_pct", 40) / 100
+                    break
+
         new_cash = state.cash.available_cash - amount
         new_ratio = new_cash / state.cash.total_assets if state.cash.total_assets > 0 else 0
         passed = new_ratio >= cash_floor_pct
@@ -128,13 +186,30 @@ class SimpleConstraintChecker(ConstraintChecker):
         }
 
     def _check_position_cap(self, state: PortfolioState, ticker: str, amount: float) -> dict:
-        """检查单标的持仓上限"""
-        # 从策略模板获取单标的上限（默认 15%）
+        """检查单标的持仓上限（策略驱动）"""
         position_cap_pct = 0.15
-        # 简化计算
+        if self._strategy:
+            for rule in self._strategy.rules:
+                if rule.rule == "risk_rules.position_cap":
+                    position_cap_pct = rule.params.get("max_single_pct", 15) / 100
+                    break
+
+        # 从 state 中查找该标的当前持仓市值
+        current_value = 0
+        for pos in state.positions:
+            if pos.ticker == ticker:
+                current_value = pos.market_value
+                break
+
+        # 买入后的新市值
+        new_value = current_value + amount
+        total_assets = state.cash.total_assets if state.cash.total_assets > 0 else 1
+        new_pct = new_value / total_assets
+        passed = new_pct <= position_cap_pct
+
         return {
             "rule": "risk_rules.position_cap",
-            "level": "advisory",
-            "message": f"标的 {ticker} 持仓上限检查通过",
-            "passed": True,
+            "level": "hard_block" if not passed else "advisory",
+            "message": f"标的 {ticker} 买入后持仓 {new_pct:.1%}" + (f" ≤ 上限 {position_cap_pct:.0%}" if passed else f" > 上限 {position_cap_pct:.0%}"),
+            "passed": passed,
         }

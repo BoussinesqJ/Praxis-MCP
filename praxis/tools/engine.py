@@ -29,43 +29,31 @@ async def reconcile(investor: str, portfolio: str, nav: float | None = None, wor
 
 
 def check_constraints(investor: str, portfolio: str, action: str, ticker: str, amount: float = 0, workspace: str = ".") -> dict:
-    """检查约束"""
+    """检查约束（策略驱动）"""
     loader = YamlConfigLoader(workspace)
     try:
         inv = loader.load_investor(investor)
         port = loader.load_portfolio(investor, portfolio)
-        # 从 ledger 重建真实状态
-        from praxis.core.ledger import FileLedger
-        from praxis.core.state_builder import SimpleStateBuilder
-        from praxis.engine.data.provider import CachedDataProvider
-        from pathlib import Path
-        import asyncio
-        import concurrent.futures
 
-        ledger_path = Path(workspace) / "data" / "ledger" / "transactions.jsonl"
-        ledger = FileLedger(ledger_path)
-        provider = CachedDataProvider(workspace=workspace)
-
-        async def get_real_state():
+        # 加载策略规则（策略驱动约束）
+        strategy = None
+        if port.strategy_template:
             try:
-                builder = SimpleStateBuilder(ledger, loader, provider)
-                state = await builder.rebuild(investor, portfolio)
-                return state
-            finally:
-                await provider.close()
+                strategy = loader.load_strategy(port.strategy_template)
+            except Exception:
+                pass  # 策略文件不存在时降级为无策略模式
 
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                state = executor.submit(lambda: asyncio.run(get_real_state())).result()
-        else:
-            state = asyncio.run(get_real_state())
-
-        checker = SimpleConstraintChecker(inv, port)
+        from praxis.core.models.state import PortfolioState, CashState
+        state = PortfolioState(
+            investor_id=investor,
+            portfolio_id=portfolio,
+            cash=CashState(
+                total_assets=inv.capital_cny,
+                available_cash=inv.capital_cny,
+                cash_ratio=1.0,
+            ),
+        )
+        checker = SimpleConstraintChecker(inv, port, strategy=strategy)
         results = checker.check(state, action, ticker, amount=amount)
         return {
             "success": True,
@@ -73,6 +61,7 @@ def check_constraints(investor: str, portfolio: str, action: str, ticker: str, a
                 "checks": results,
                 "all_passed": all(r["passed"] for r in results),
                 "blocked": [r for r in results if not r["passed"] and r["level"] == "hard_block"],
+                "strategy_loaded": strategy.name if strategy else None,
             },
         }
     except Exception as e:

@@ -1,5 +1,4 @@
 """E2.5 — 错误路径测试"""
-import os
 import pytest
 
 from praxis.core.models.error import PraxisError, ConfigError, DataError, ReconcileError, LedgerError, ConstraintViolation
@@ -15,24 +14,21 @@ class TestConfigErrors:
 
     def test_nonexistent_investor(self):
         """不存在的投资者"""
-        workspace = os.environ.get("PRAXIS_WORKSPACE", ".")
-        loader = YamlConfigLoader(workspace)
+        loader = YamlConfigLoader("C:/Users/77271/Desktop/Portfolio vault")
         with pytest.raises(ConfigError) as exc_info:
             loader.load_investor("nonexistent")
         assert "不存在" in str(exc_info.value)
 
     def test_nonexistent_portfolio(self):
         """不存在的组合"""
-        workspace = os.environ.get("PRAXIS_WORKSPACE", ".")
-        loader = YamlConfigLoader(workspace)
+        loader = YamlConfigLoader("C:/Users/77271/Desktop/Portfolio vault")
         with pytest.raises(ConfigError) as exc_info:
             loader.load_portfolio("example", "nonexistent")
         assert "不存在" in str(exc_info.value)
 
     def test_nonexistent_strategy(self):
         """不存在的策略"""
-        workspace = os.environ.get("PRAXIS_WORKSPACE", ".")
-        loader = YamlConfigLoader(workspace)
+        loader = YamlConfigLoader("C:/Users/77271/Desktop/Portfolio vault")
         with pytest.raises(ConfigError) as exc_info:
             loader.load_strategy("nonexistent")
         assert "不存在" in str(exc_info.value)

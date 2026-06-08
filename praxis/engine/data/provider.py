@@ -43,6 +43,11 @@ class CachedDataProvider(DataProvider):
         self._cache_dir = Path(cache_dir) if cache_dir else None
         self._cache_ttl = cache_ttl_seconds
         self._memory_cache: dict[str, dict] = {}
+        self._cache_timestamps: dict[str, float] = {}  # ticker → timestamp
+
+        # 启动时加载文件缓存
+        if self._cache_dir:
+            self._load_file_cache()
 
     async def get_realtime_quote(self, tickers: list[str]) -> dict[str, dict]:
         """获取实时行情（链式容错）"""
@@ -60,6 +65,9 @@ class CachedDataProvider(DataProvider):
                 if result:
                     self._registry.report_success(name)
                     self._memory_cache.update(result)
+                    self._cache_timestamps.update(
+                        {k: datetime.now().timestamp() for k in result}
+                    )
                     if self._cache_dir:
                         self._save_cache(result)
                     return result
@@ -90,18 +98,29 @@ class CachedDataProvider(DataProvider):
         return []
 
     async def get_fund_nav(self, ticker: str) -> dict:
-        """获取基金净值（链式容错）"""
+        """获取基金净值（链式容错 + 缓存降级）"""
+        cache_key = f"fund_nav:{ticker}"
         chain = self._registry.get_chain()
         for name, provider in chain:
             try:
                 result = await provider.get_fund_nav(ticker)
                 if result:
                     self._registry.report_success(name)
+                    self._memory_cache[cache_key] = result
+                    self._cache_timestamps[cache_key] = datetime.now().timestamp()
                     return result
             except Exception as e:
                 logger.warning(f"数据源 {name} 基金净值失败: {e}")
                 self._registry.report_failure(name)
                 continue
+
+        # 所有源失败，尝试缓存
+        if cache_key in self._memory_cache:
+            cached = self._memory_cache[cache_key].copy()
+            cached["is_stale"] = True
+            logger.warning(f"基金净值 {ticker} 使用缓存")
+            return cached
+
         raise DataError(f"所有数据源均无法获取基金净值: {ticker}")
 
     def list_providers(self) -> list[dict]:
@@ -109,14 +128,34 @@ class CachedDataProvider(DataProvider):
         return self._registry.list_providers()
 
     def _get_from_cache(self, tickers: list[str]) -> dict[str, dict]:
-        """从缓存获取行情"""
+        """从缓存获取行情（检查 TTL）"""
         result = {}
+        now = datetime.now().timestamp()
         for ticker in tickers:
             if ticker in self._memory_cache:
+                ts = self._cache_timestamps.get(ticker, 0)
+                is_expired = (now - ts) > self._cache_ttl
                 cached = self._memory_cache[ticker].copy()
-                cached["is_stale"] = True
+                cached["is_stale"] = is_expired
                 result[ticker] = cached
         return result
+
+    def _load_file_cache(self):
+        """启动时加载文件缓存"""
+        cache_file = self._cache_dir / "realtime_cache.json"
+        if not cache_file.exists():
+            return
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self._memory_cache.update(data)
+                self._cache_timestamps.update(
+                    {k: datetime.now().timestamp() for k in data}
+                )
+                logger.info(f"从文件缓存加载 {len(data)} 条行情")
+        except Exception:
+            pass
 
     def _save_cache(self, data: dict[str, dict]):
         """保存到文件缓存"""

@@ -102,11 +102,6 @@ class Ledger(ABC):
         """清空交易记录（按标签或全部），返回删除数"""
         ...
 
-    @abstractmethod
-    def verify_integrity(self) -> tuple[bool, list[str]]:
-        """验证账本数据的完整性，返回 (是否完整, 错误列表)"""
-        ...
-
 
 class StateBuilder(ABC):
     """状态重建器接口"""

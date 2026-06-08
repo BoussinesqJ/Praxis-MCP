@@ -1,5 +1,4 @@
 """E1.10 — 进化引擎测试"""
-import os
 import pytest
 
 from praxis.engine.evolution import EvolutionEngine
@@ -7,8 +6,7 @@ from praxis.engine.evolution import EvolutionEngine
 
 @pytest.fixture
 def engine():
-    workspace = os.environ.get("PRAXIS_WORKSPACE", ".")
-    return EvolutionEngine(workspace)
+    return EvolutionEngine("C:/Users/77271/Desktop/Portfolio vault")
 
 
 class TestEvolutionEvaluate:

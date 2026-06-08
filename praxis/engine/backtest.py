@@ -1,8 +1,9 @@
-"""简单回测引擎
+"""账本绩效分析引擎
 
-GPT 要求：验证策略是否有效，必须有回测能力。
-V1 实现：单策略回测，基于历史净值数据。
-"""
+注意：此模块分析已有交易记录的绩效统计，不是历史模拟回测。
+基于账本数据的事后分析，不模拟交易执行。
+
+后续版本将实现真正的模拟回测（基于历史价格数据模拟交易执行）。"""
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -27,6 +28,7 @@ class BacktestConfig(BaseModel):
 
 class BacktestResult(BaseModel):
     """回测结果"""
+    mode: str = "ledger_analysis"  # ledger_analysis | simulation
     strategy_name: str
     start_date: str
     end_date: str
@@ -44,12 +46,10 @@ class BacktestResult(BaseModel):
 
 
 class SimpleBacktestEngine:
-    """简单回测引擎
+    """账本绩效分析引擎
 
-    V1 实现：
-    - 基于历史净值数据回测
-    - 计算核心绩效指标
-    - 与基准对比
+    基于已有交易记录计算绩效统计（非历史模拟回测）。
+    后续版本将实现真正的模拟回测。
     """
 
     def __init__(self, ledger: FileLedger, initial_capital: float = 70000):
@@ -194,8 +194,10 @@ class SimpleBacktestEngine:
 
     def format_result(self, result: BacktestResult) -> str:
         """格式化回测结果"""
+        mode_label = "账本绩效分析" if result.mode == "ledger_analysis" else "模拟回测"
         lines = [
-            f"=== 回测结果 ===",
+            f"=== {mode_label}结果 ===",
+            f"模式: {mode_label}（基于已有交易记录，非历史模拟）",
             f"策略: {result.strategy_name}",
             f"回测期间: {result.start_date} ~ {result.end_date}",
             f"",

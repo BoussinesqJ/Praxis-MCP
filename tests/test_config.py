@@ -1,5 +1,4 @@
 """E1.6 — 配置加载器测试"""
-import os
 import pytest
 from pathlib import Path
 
@@ -9,9 +8,7 @@ from praxis.core.models.error import ConfigError
 
 @pytest.fixture
 def loader():
-    # 使用环境变量或默认路径
-    workspace = os.environ.get("PRAXIS_WORKSPACE", ".")
-    return YamlConfigLoader(workspace)
+    return YamlConfigLoader("C:/Users/77271/Desktop/Portfolio vault")
 
 
 class TestLoadInvestor:

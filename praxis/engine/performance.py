@@ -97,36 +97,45 @@ class EnhancedPerformanceCalculator(PerformanceCalculatorInterface):
         buy_count = sum(1 for tx in transactions if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE))
         sell_count = sum(1 for tx in transactions if tx.type in (TransactionType.SELL, TransactionType.REDEEM))
 
-        # 3. 计算胜率与盈亏比
+        # 3. 计算胜率
         win_count = 0
         loss_count = 0
-        win_pnls = []
-        loss_pnls = []
         for tx in transactions:
             if tx.type in (TransactionType.SELL, TransactionType.REDEEM):
-                # 仅筛选在当前卖出交易之前发生的买入交易，防范后视偏差 (look-ahead bias)
                 buy_txs = [
                     t for t in transactions
                     if t.ticker == tx.ticker
                     and t.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
-                    and t.created_at < tx.created_at
+                ]
+                if buy_txs:
+                    avg_buy_price = sum(t.quantity * t.price for t in buy_txs) / sum(t.quantity for t in buy_txs)
+                    if tx.price > avg_buy_price:
+                        win_count += 1
+                    else:
+                        loss_count += 1
+
+        total_trades = win_count + loss_count
+        win_rate = win_count / total_trades if total_trades > 0 else 0
+
+        # 4. 计算盈亏比（按单笔交易计算）
+        total_win_amount = 0
+        total_loss_amount = 0
+        for tx in transactions:
+            if tx.type in (TransactionType.SELL, TransactionType.REDEEM):
+                buy_txs = [
+                    t for t in transactions
+                    if t.ticker == tx.ticker
+                    and t.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
                 ]
                 if buy_txs:
                     avg_buy_price = sum(t.quantity * t.price for t in buy_txs) / sum(t.quantity for t in buy_txs)
                     trade_pnl = tx.quantity * (tx.price - avg_buy_price) - tx.fee
                     if trade_pnl > 0:
-                        win_count += 1
-                        win_pnls.append(trade_pnl)
+                        total_win_amount += trade_pnl
                     else:
-                        loss_count += 1
-                        loss_pnls.append(abs(trade_pnl))
-
-        total_trades = win_count + loss_count
-        win_rate = win_count / total_trades if total_trades > 0 else 0
-
-        # 4. 计算盈亏比 (平均盈利 / 平均亏损)
-        avg_win = sum(win_pnls) / len(win_pnls) if win_pnls else 0
-        avg_loss = sum(loss_pnls) / len(loss_pnls) if loss_pnls else 0
+                        total_loss_amount += abs(trade_pnl)
+        avg_win = total_win_amount / win_count if win_count > 0 else 0
+        avg_loss = total_loss_amount / loss_count if loss_count > 0 else 0
         profit_loss_ratio = avg_win / avg_loss if avg_loss > 0 else 0
 
         # 5. 计算换手率
@@ -247,16 +256,15 @@ class EnhancedPerformanceCalculator(PerformanceCalculatorInterface):
         return std_dev * math.sqrt(252)
 
     def _calculate_downside_volatility(self, daily_returns: list[float]) -> float:
-        """计算下行波动率"""
+        """计算下行波动率（Sortino 标准公式）
+
+        标准公式：sqrt(mean(min(r, 0)^2))，使用所有收益数据，
+        只取负收益的平方，正收益视为 0。
+        """
         if not daily_returns:
             return 0
-        negative_returns = [r for r in daily_returns if r < 0]
-        if not negative_returns:
-            return 0
-        mean = sum(negative_returns) / len(negative_returns)
-        variance = sum((r - mean) ** 2 for r in negative_returns) / len(negative_returns)
-        std_dev = math.sqrt(variance)
-        return std_dev * math.sqrt(252)
+        downside_sq = sum(min(r, 0) ** 2 for r in daily_returns) / len(daily_returns)
+        return math.sqrt(downside_sq) * math.sqrt(252)
 
     def _calculate_tracking_error(
         self, nav_series: list[float], benchmark_series: list[float]
@@ -285,10 +293,15 @@ class EnhancedPerformanceCalculator(PerformanceCalculatorInterface):
     def compare_versions(
         self, version_a: str, version_b: str, metric: str = "sharpe_ratio"
     ) -> dict:
-        """策略版本对比（需要历史数据）"""
+        """策略版本对比
+
+        注意：当前为存根实现。需要历史净值数据和版本标记支持才能进行有意义的对比。
+        后续版本将实现基于 nav_series 的版本级绩效对比。
+        """
         return {
             "version_a": version_a,
             "version_b": version_b,
             "metric": metric,
-            "result": "需要历史数据支持",
+            "status": "stub",
+            "message": "策略版本对比需要带版本标记的历史净值数据。当前版本暂不支持。",
         }

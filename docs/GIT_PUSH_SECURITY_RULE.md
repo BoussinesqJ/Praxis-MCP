@@ -182,7 +182,7 @@ data/audit/git_push_audit.jsonl
     "config_files": "passed",
     "large_files": "passed"
   },
-  "approved_by": "用户"
+  "approved_by": "示例投资者"
 }
 ```
 

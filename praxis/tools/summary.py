@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from praxis.core.ledger import FileLedger
+from praxis.core.ledger import FileLedger, filter_active_transactions
 from praxis.core.models.transaction import TransactionType
 from praxis.core.state_builder import SimpleStateBuilder
 from praxis.engine.config_loader import YamlConfigLoader
@@ -62,7 +62,7 @@ async def get_portfolio_summary(
             first_tx_time = None
             last_tx_time = None
 
-            for tx in ledger.get_all():
+            for tx in filter_active_transactions(ledger.get_all()):
                 ticker = tx.ticker
                 if ticker not in positions_map:
                     positions_map[ticker] = {
@@ -109,7 +109,8 @@ async def get_portfolio_summary(
 
             for ticker, pos_data in positions_map.items():
                 quantity = pos_data["quantity"]
-                if quantity <= 0:
+                # 浮点精度保护：忽略极小持仓（< 0.0001）
+                if quantity <= 0.0001:
                     continue
 
                 total_cost = pos_data["total_cost"]

@@ -83,16 +83,11 @@ class PromptComposer:
         return "\n\n".join(parts)
 
     def _load_team_prompt(self, team_name: str) -> str:
-        """加载团队 prompt（优先通过 PromptVersionManager）"""
-        from praxis.engine.prompt_versioning.manager import PromptVersionManager
-        try:
-            manager = PromptVersionManager(self._workspace)
-            return manager.get_prompt(team_name)
-        except Exception:
-            team_path = self._workspace / "teams" / "base_prompts" / f"{team_name}.md"
-            if team_path.exists():
-                return team_path.read_text(encoding="utf-8")
-            return ""
+        """加载团队 prompt（从 teams/base_prompts/）"""
+        team_path = self._workspace / "teams" / "base_prompts" / f"{team_name}.md"
+        if team_path.exists():
+            return team_path.read_text(encoding="utf-8")
+        return ""
 
     def _load_strategy_context(self, strategy_name: str, team_name: str) -> str:
         """加载策略上下文"""
@@ -218,13 +213,21 @@ class PromptComposer:
         }
 
     def _calculate_diff(self, old_content: str, new_content: str) -> str:
-        """计算差异"""
+        """计算差异（支持修改/插入/删除）"""
         old_lines = old_content.split("\n")
         new_lines = new_content.split("\n")
 
         diff_lines = []
-        for i, (old, new) in enumerate(zip(old_lines, new_lines)):
-            if old != new:
+        max_len = max(len(old_lines), len(new_lines))
+        for i in range(max_len):
+            old = old_lines[i] if i < len(old_lines) else None
+            new = new_lines[i] if i < len(new_lines) else None
+
+            if old is None:
+                diff_lines.append(f"+ {i+1}: {new}")
+            elif new is None:
+                diff_lines.append(f"- {i+1}: {old}")
+            elif old != new:
                 diff_lines.append(f"- {i+1}: {old}")
                 diff_lines.append(f"+ {i+1}: {new}")
 

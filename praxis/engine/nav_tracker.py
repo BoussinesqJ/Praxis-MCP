@@ -89,30 +89,35 @@ class NavTracker:
         investor = config_loader.load_investor(investor_id)
         portfolio = config_loader.load_portfolio(investor_id, portfolio_id)
 
-        # 从 ledger 计算持仓
+        # 从 ledger 计算持仓 + 现金（单次遍历，过滤冲销）
         from praxis.core.models.transaction import TransactionType
-        positions_map: dict[str, dict] = {}
-        for tx in self._ledger.get_all():
-            tx_investor = getattr(tx, "investor_id", "example")
-            tx_portfolio = getattr(tx, "portfolio_id", "demo")
-            if tx_investor != investor_id or tx_portfolio != portfolio_id:
-                continue
+        from praxis.core.ledger import filter_active_transactions
 
+        positions_map: dict[str, dict] = {}
+        total_buy = 0.0
+        total_sell = 0.0
+        total_dividend = 0.0
+
+        for tx in filter_active_transactions(self._ledger.get_all()):
             ticker = tx.ticker
             if ticker not in positions_map:
-                positions_map[ticker] = {"quantity": 0, "total_cost": 0}
+                positions_map[ticker] = {"quantity": 0.0, "total_cost": 0.0}
 
             pos = positions_map[ticker]
             if tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE):
                 pos["quantity"] += tx.quantity
                 pos["total_cost"] += tx.quantity * tx.price + tx.fee
+                total_buy += tx.quantity * tx.price + tx.fee
             elif tx.type in (TransactionType.SELL, TransactionType.REDEEM):
                 pos["quantity"] -= tx.quantity
                 pos["total_cost"] = max(0, pos["total_cost"] - tx.quantity * (pos["total_cost"] / max(pos["quantity"] + tx.quantity, 1)))
+                total_sell += tx.quantity * tx.price - tx.fee
+            elif tx.type == TransactionType.DIVIDEND:
+                total_dividend += tx.price
 
         # 获取行情
-        tickers = [a.ticker for a in portfolio.assets if a.ticker]
-        quotes = await self._data.get_realtime_quote(tickers)
+        tickers = list(set(ticker for ticker in positions_map if positions_map[ticker]["quantity"] > 0))
+        quotes = await self._data.get_realtime_quote(tickers) if tickers else {}
 
         # 计算持仓市值
         positions_value = 0
@@ -132,23 +137,9 @@ class NavTracker:
 
                 positions_value += pos_data["quantity"] * price
 
-        # 计算现金
-        total_buy = sum(
-            tx.quantity * tx.price + tx.fee
-            for tx in self._ledger.get_all()
-            if getattr(tx, "investor_id", "example") == investor_id
-            and getattr(tx, "portfolio_id", "demo") == portfolio_id
-            and tx.type in (TransactionType.BUY, TransactionType.SUBSCRIBE)
-        )
-        total_sell = sum(
-            tx.quantity * tx.price - tx.fee
-            for tx in self._ledger.get_all()
-            if getattr(tx, "investor_id", "example") == investor_id
-            and getattr(tx, "portfolio_id", "demo") == portfolio_id
-            and tx.type in (TransactionType.SELL, TransactionType.REDEEM)
-        )
-        cash = investor.capital_cny - total_buy + total_sell
-        total_assets = cash + positions_value
+        # 计算现金（含分红）
+        available_cash = investor.capital_cny - total_buy + total_sell + total_dividend
+        total_assets = available_cash + positions_value
 
         # 计算净值
         nav = total_assets / investor.capital_cny if investor.capital_cny > 0 else 1.0
@@ -158,7 +149,7 @@ class NavTracker:
             nav=nav,
             total_assets=total_assets,
             positions_value=positions_value,
-            cash=cash,
+            cash=available_cash,
             benchmark_nav=None,
             benchmark_code=None,
         )

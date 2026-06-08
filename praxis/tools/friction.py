@@ -75,19 +75,14 @@ def check_trading_time(
         asset_type: 资产类型（stock/etf/offshore_fund）
     """
     try:
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime
 
         calendar = TradingCalendar()
-        beijing_tz = timezone(timedelta(hours=8))
 
         if timestamp:
             dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=beijing_tz)
-            else:
-                dt = dt.astimezone(beijing_tz)
         else:
-            dt = datetime.now(beijing_tz)
+            dt = datetime.now()
 
         is_trading_day = calendar.is_trading_day(dt)
         is_trading_time = calendar.is_trading_time(dt)

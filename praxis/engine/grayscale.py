@@ -16,7 +16,6 @@ from praxis.engine.config_loader import YamlConfigLoader
 from praxis.engine.backtest import SimpleBacktestEngine, BacktestConfig
 from praxis.core.ledger import FileLedger
 from praxis.core.models.error import PraxisError
-from praxis.core.database import Database
 
 
 class GrayscaleConfig(BaseModel):
@@ -44,16 +43,14 @@ class GrayscaleResult(BaseModel):
 class StrategyGrayscale:
     """策略风险灰度管理器"""
 
-    def __init__(self, workspace: str = ".", db: Database | None = None):
+    def __init__(self, workspace: str = "."):
         self._workspace = Path(workspace)
         self._config = YamlConfigLoader(workspace)
         self._ledger = FileLedger(workspace + "/data/ledger/transactions.jsonl")
-        self._db = db or Database(self._workspace / "data" / "praxis_system.db")
 
     def prepare_grayscale(
         self,
         config: GrayscaleConfig,
-        new_content: str | None = None,
     ) -> GrayscaleResult:
         """准备灰度验证
 
@@ -65,22 +62,6 @@ class StrategyGrayscale:
         try:
             # 1. 备份当前策略
             backup_path = self._backup_strategy(config.strategy_name)
-
-            # 记录新内容的哈希到 proposals
-            if new_content and backup_path:
-                import hashlib
-                content_hash = hashlib.sha256(new_content.encode("utf-8")).hexdigest()
-                prepared_at = datetime.now(timezone.utc).isoformat()
-                
-                with self._db.get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        """
-                        INSERT OR REPLACE INTO grayscale_proposals (backup_path, strategy_name, content_hash, prepared_at)
-                        VALUES (?, ?, ?, ?)
-                        """,
-                        (str(backup_path), config.strategy_name, content_hash, prepared_at)
-                    )
 
             # 2. 运行回测验证（如果需要）
             backtest_result = None
@@ -197,59 +178,6 @@ class StrategyGrayscale:
     ) -> dict:
         """审批通过后应用变更"""
         try:
-            import hashlib
-            import json
-            
-            backup_file = Path(backup_path)
-            if not backup_file.is_absolute():
-                backup_file = self._workspace / backup_file
-            
-            if not backup_file.exists():
-                return {"success": False, "error": f"备份文件不存在: {backup_path}"}
-            
-            # 校验备份文件名格式，如 grid_value.20260607_120000.bak
-            # 以防止恶意修改其他非策略文件
-            name_parts = backup_file.name.split(".")
-            if not name_parts or name_parts[0] != strategy_name:
-                return {"success": False, "error": f"备份文件名称 {backup_file.name} 与策略名称 {strategy_name} 不匹配"}
-
-            # 如果 proposals 存在该备份文件的记录，强制校验哈希一致性
-            proposal = None
-            try:
-                with self._db.get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "SELECT strategy_name, content_hash, prepared_at FROM grayscale_proposals WHERE backup_path = ?",
-                        (str(backup_path),)
-                    )
-                    row = cursor.fetchone()
-                    if row:
-                        proposal = {
-                            "strategy_name": row["strategy_name"],
-                            "content_hash": row["content_hash"],
-                            "prepared_at": row["prepared_at"]
-                        }
-            except Exception:
-                pass
-
-            if proposal:
-                if proposal["strategy_name"] != strategy_name:
-                    return {"success": False, "error": f"提案策略名称不符: 预期 {proposal['strategy_name']}, 实际 {strategy_name}"}
-                
-                current_hash = hashlib.sha256(new_content.encode("utf-8")).hexdigest()
-                if proposal["content_hash"] != current_hash:
-                    return {
-                        "success": False,
-                        "error": "审批内容哈希校验失败！写入内容与准备灰度阶段所验证的内容不一致，已被拒绝写入。",
-                    }
-                # 校验成功，从提案中删除
-                try:
-                    with self._db.get_connection() as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM grayscale_proposals WHERE backup_path = ?", (str(backup_path),))
-                except Exception:
-                    pass
-
             strategy_path = self._workspace / "strategies" / f"{strategy_name}.yaml"
 
             # 写入新内容
@@ -258,7 +186,7 @@ class StrategyGrayscale:
             return {
                 "success": True,
                 "data": {
-                    "message": f"策略 {strategy_name} 已成功通过灰度审核并更新",
+                    "message": f"策略 {strategy_name} 已更新",
                     "backup_path": backup_path,
                 },
             }
