@@ -28,7 +28,7 @@ def _ensure_baostock():
 
 
 def _to_bs_code(ticker: str) -> str:
-    """转换为 Baostock 代码格式: sh.600995 / sz.000001"""
+    """转换为 Baostock 代码格式: sh.STOCK_A / sz.000001"""
     if "." in ticker:
         return ticker
     if ticker.startswith(("6", "5")):

@@ -43,10 +43,10 @@ portfolio:
   strategy_type: "grid_value"
   strategy_template: "grid_value"
   created_at: "2026-05-18"
-  version: "v9.0"
+  version: "v1.0"
 assets:
-  - ticker: "600995"
-    name: "南网储能"
+  - ticker: "STOCK_A"
+    name: "示例股票A"
     type: "stock"
     category: "power_infra"
     target_weight_pct: 20
@@ -66,7 +66,7 @@ def test_constraints_with_real_ledger_cash(temp_workspace):
     tx = Transaction(
         tx_id="tx-20260607-001",
         type=TransactionType.BUY,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=5500,
         price=10.0,
         fee=0.0,
@@ -78,12 +78,12 @@ def test_constraints_with_real_ledger_cash(temp_workspace):
     
     # 2. 尝试再次买入 10,000 元，因为交易后现金将降至 35,000 (< 40,000 底线)，应当被 hard_block！
     with patch("praxis.engine.data.provider.CachedDataProvider.get_realtime_quote", new_callable=AsyncMock) as mock_quote:
-        mock_quote.return_value = {"600995": {"price": 10.0}}
+        mock_quote.return_value = {"STOCK_A": {"price": 10.0}}
         result = check_constraints(
             investor="example",
             portfolio="demo",
             action="buy",
-            ticker="600995",
+            ticker="STOCK_A",
             amount=10000,
             workspace=str(temp_workspace)
         )

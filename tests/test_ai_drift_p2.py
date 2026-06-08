@@ -10,14 +10,14 @@ def test_ai_drift_normal():
     decisions = [
         DecisionRecord(
             decision_id="dc-1",
-            ticker="600995",
+            ticker="STOCK_A",
             action="buy",
             confidence=0.9,
             review_5d=ReviewSnapshot(actual_return_pct=5.0)  # 获利 (outcome=1)
         ),
         DecisionRecord(
             decision_id="dc-2",
-            ticker="600995",
+            ticker="STOCK_A",
             action="buy",
             confidence=0.1,
             review_5d=ReviewSnapshot(actual_return_pct=-3.0)  # 亏损 (outcome=0)
@@ -50,7 +50,7 @@ def test_ai_drift_warning():
         decisions.append(
             DecisionRecord(
                 decision_id=f"dc-{i}",
-                ticker="600995",
+                ticker="STOCK_A",
                 action="buy",
                 confidence=0.8,
                 review_5d=ReviewSnapshot(actual_return_pct=ret)
@@ -74,7 +74,7 @@ def test_ai_drift_critical():
         decisions.append(
             DecisionRecord(
                 decision_id=f"dc-{i}",
-                ticker="600995",
+                ticker="STOCK_A",
                 action="buy",
                 confidence=0.9,
                 review_5d=ReviewSnapshot(actual_return_pct=-3.0)

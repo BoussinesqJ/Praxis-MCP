@@ -21,7 +21,7 @@ portfolio:
   strategy_type: "grid_value"
   strategy_template: "grid_value"
   created_at: "2026-05-18"
-  version: "v9.0"
+  version: "v1.0"
   description: "Initial description"
 """)
             

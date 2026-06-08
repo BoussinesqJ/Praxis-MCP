@@ -33,24 +33,24 @@ class TestRecordDecision:
 
     def test_record_creates_file(self, store):
         """记录应创建 JSONL 文件"""
-        d = _make_decision("reasonix", "600995", "buy")
+        d = _make_decision("reasonix", "STOCK_A", "buy")
         store.record(d)
         path = store._decisions_dir / "reasonix.jsonl"
         assert path.exists()
 
     def test_load_agent_decisions(self, store):
         """加载某 Agent 的决策"""
-        store.record(_make_decision("reasonix", "600995", "buy"))
-        store.record(_make_decision("reasonix", "510310", "hold"))
+        store.record(_make_decision("reasonix", "STOCK_A", "buy"))
+        store.record(_make_decision("reasonix", "ETF_300", "hold"))
         decisions = store.load_agent_decisions("reasonix")
         assert len(decisions) == 2
 
     def test_load_ticker_decisions(self, store):
         """加载某标的的多 Agent 决策"""
-        store.record(_make_decision("reasonix", "600995", "buy"))
-        store.record(_make_decision("gemini", "600995", "buy"))
-        store.record(_make_decision("reasonix", "510310", "hold"))
-        decisions = store.load_ticker_decisions("600995")
+        store.record(_make_decision("reasonix", "STOCK_A", "buy"))
+        store.record(_make_decision("gemini", "STOCK_A", "buy"))
+        store.record(_make_decision("reasonix", "ETF_300", "hold"))
+        decisions = store.load_ticker_decisions("STOCK_A")
         assert len(decisions) == 2
 
 
@@ -59,11 +59,11 @@ class TestConsensus:
 
     def test_consensus_achieved(self, store, engine):
         """2/3 agents agree → 共识"""
-        store.record(_make_decision("reasonix", "600995", "buy"))
-        store.record(_make_decision("gemini", "600995", "buy"))
-        store.record(_make_decision("claude", "600995", "sell"))
+        store.record(_make_decision("reasonix", "STOCK_A", "buy"))
+        store.record(_make_decision("gemini", "STOCK_A", "buy"))
+        store.record(_make_decision("claude", "STOCK_A", "sell"))
 
-        result = engine.check_consensus("600995")
+        result = engine.check_consensus("STOCK_A")
         assert result["consensus"] is True
         assert result["recommended_action"] == "buy"
         assert result["total_agents"] == 3
@@ -71,20 +71,20 @@ class TestConsensus:
 
     def test_consensus_not_achieved(self, store, engine):
         """无多数 → 未达共识"""
-        store.record(_make_decision("reasonix", "600995", "buy"))
-        store.record(_make_decision("gemini", "600995", "sell"))
-        store.record(_make_decision("claude", "600995", "hold"))
+        store.record(_make_decision("reasonix", "STOCK_A", "buy"))
+        store.record(_make_decision("gemini", "STOCK_A", "sell"))
+        store.record(_make_decision("claude", "STOCK_A", "hold"))
 
-        result = engine.check_consensus("600995")
+        result = engine.check_consensus("STOCK_A")
         assert result["consensus"] is False
         assert result["recommended_action"] is None
 
     def test_two_agents_consensus(self, store, engine):
         """2/2 agents agree"""
-        store.record(_make_decision("reasonix", "510310", "hold"))
-        store.record(_make_decision("gemini", "510310", "hold"))
+        store.record(_make_decision("reasonix", "ETF_300", "hold"))
+        store.record(_make_decision("gemini", "ETF_300", "hold"))
 
-        result = engine.check_consensus("510310")
+        result = engine.check_consensus("ETF_300")
         assert result["consensus"] is True
         assert result["recommended_action"] == "hold"
 
@@ -96,11 +96,11 @@ class TestConsensus:
 
     def test_same_agent_latest_only(self, store, engine):
         """同一 Agent 只取最新决策"""
-        store.record(_make_decision("reasonix", "600995", "buy", timestamp="2026-06-08T10:00:00"))
-        store.record(_make_decision("reasonix", "600995", "sell", timestamp="2026-06-08T11:00:00"))
-        store.record(_make_decision("gemini", "600995", "sell", timestamp="2026-06-08T10:00:00"))
+        store.record(_make_decision("reasonix", "STOCK_A", "buy", timestamp="2026-06-08T10:00:00"))
+        store.record(_make_decision("reasonix", "STOCK_A", "sell", timestamp="2026-06-08T11:00:00"))
+        store.record(_make_decision("gemini", "STOCK_A", "sell", timestamp="2026-06-08T10:00:00"))
 
-        result = engine.check_consensus("600995")
+        result = engine.check_consensus("STOCK_A")
         assert result["consensus"] is True
         assert result["recommended_action"] == "sell"
         assert result["total_agents"] == 2  # 只有 2 个不同 Agent
@@ -112,9 +112,9 @@ class TestRankAgents:
     def test_ranking(self, store, engine):
         """排名按决策数量排序"""
         for _ in range(5):
-            store.record(_make_decision("reasonix", "600995", "buy"))
+            store.record(_make_decision("reasonix", "STOCK_A", "buy"))
         for _ in range(3):
-            store.record(_make_decision("gemini", "600995", "hold"))
+            store.record(_make_decision("gemini", "STOCK_A", "hold"))
 
         rankings = engine.rank_agents()
         assert len(rankings) == 2

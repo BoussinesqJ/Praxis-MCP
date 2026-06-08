@@ -135,9 +135,9 @@ class TestProviderChain:
         assert len(chain) == 1
 
         result = asyncio.get_event_loop().run_until_complete(
-            chain[0][1].get_realtime_quote(["600995"])
+            chain[0][1].get_realtime_quote(["STOCK_A"])
         )
-        assert result["600995"]["source"] == "mock_a"
+        assert result["STOCK_A"]["source"] == "mock_a"
 
 
 class TestBuiltinDiscovery:

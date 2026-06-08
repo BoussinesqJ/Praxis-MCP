@@ -25,9 +25,9 @@ class ExampleProvider(DataProvider):
 
         返回格式:
         {
-            "600995": {
-                "name": "南网储能",
-                "ticker": "600995",
+            "STOCK_A": {
+                "name": "示例股票A",
+                "ticker": "STOCK_A",
                 "price": 15.13,
                 "prev_close": 15.65,
                 "open": 15.66,
@@ -70,8 +70,8 @@ class ExampleProvider(DataProvider):
 
         返回格式:
         {
-            "ticker": "016874",
-            "name": "广发远见智选C",
+            "ticker": "FUND_A",
+            "name": "示例基金A",
             "nav": 1.9456,
             "acc_nav": 1.9456,
             "nav_date": "2026-06-05",

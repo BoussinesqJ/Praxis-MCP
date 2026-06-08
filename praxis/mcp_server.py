@@ -274,7 +274,7 @@ async def get_performance_tool(
         exclude_reversed: 排除已冲销的交易对（推荐开启以获得真实绩效）
         exclude_tags: 排除带有这些标签的交易（如 ["test", "migration"]）
         include_tags: 仅计算带有这些标签的交易（如 ["real"]）
-        ticker: 仅计算指定标的的绩效（如 "600995"）
+        ticker: 仅计算指定标的的绩效（如 "STOCK_A"）
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
     from praxis.tools.performance import get_performance

@@ -150,7 +150,7 @@
 Agent: [调用 get_state(investor="example", portfolio="demo")]
        当前持仓：总资产 72,315 元，现金 92.7%...
 
-用户: 南网储能跌到13.38了，帮我买入200股
+用户: 示例股票A跌到13.38了，帮我买入200股
 
 Agent: [调用 add_transaction(...)] → 返回 pending_approval
        交易已记录为待审批状态。是否批准？
@@ -160,9 +160,9 @@ Agent: [调用 add_transaction(...)] → 返回 pending_approval
 Agent: [调用 approve_transaction(tx_id="tx-...")]
        交易已批准并写入账本。
 
-用户: 计算一下买入200股南网储能的交易费用
+用户: 计算一下买入200股示例股票A的交易费用
 
-Agent: [调用 calculate_fee(ticker="600995", asset_type="stock", action="buy", quantity=200, price=13.38)]
+Agent: [调用 calculate_fee(ticker="STOCK_A", asset_type="stock", action="buy", quantity=200, price=13.38)]
        交易费用：佣金 1.34 元，印花税 0 元，过户费 0.01 元，总计 1.35 元
 ```
 

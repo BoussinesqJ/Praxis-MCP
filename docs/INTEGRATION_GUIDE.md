@@ -218,7 +218,7 @@ export PRAXIS_WORKSPACE="你的实际路径"
 
 # 调用工具
 praxis portfolio get --investor example --portfolio demo
-praxis market quote --tickers 600995,510310
+praxis market quote --tickers STOCK_A,ETF_300
 praxis reconcile --investor example --portfolio demo
 praxis ledger list
 praxis performance --investor example --portfolio demo
@@ -287,7 +287,7 @@ praxis ai-tracking
 
 ```
 帮我看看当前持仓状态
-查询一下南网储能的实时行情
+查询一下示例股票A的实时行情
 列出所有交易记录
 计算一下我的投资绩效
 ```
@@ -295,7 +295,7 @@ praxis ai-tracking
 ### 操作类
 
 ```
-南网储能跌到13.38了，帮我买入200股
+示例股票A跌到13.38了，帮我买入200股
 帮我记录今天的净值：总资产72315，持仓5277，现金67037
 评估一下网格价值策略的进化维度
 ```

@@ -41,10 +41,10 @@ portfolio:
   strategy_type: "grid_value"
   strategy_template: "grid_value"
   created_at: "2026-05-18"
-  version: "v9.0"
+  version: "v1.0"
 assets:
-  - ticker: "600995"
-    name: "南网储能"
+  - ticker: "STOCK_A"
+    name: "示例股票A"
     type: "stock"
     category: "power_infra"
     target_weight_pct: 20
@@ -71,10 +71,10 @@ portfolio:
   strategy_type: "grid_value"
   strategy_template: "grid_value"
   created_at: "2026-05-18"
-  version: "v9.0"
+  version: "v1.0"
 assets:
-  - ticker: "600995"
-    name: "南网储能"
+  - ticker: "STOCK_A"
+    name: "示例股票A"
     type: "stock"
     category: "power_infra"
     target_weight_pct: 20
@@ -88,11 +88,11 @@ def test_portfolio_isolation(temp_workspace):
     ledger_path = temp_workspace / "data" / "ledger" / "transactions.jsonl"
     ledger = FileLedger(ledger_path)
     
-    # 1. 投资者 A 购买 600995 (1000 股 @ 10 元)
+    # 1. 投资者 A 购买 STOCK_A (1000 股 @ 10 元)
     tx_a = Transaction(
         tx_id="tx-20260607-001",
         type=TransactionType.BUY,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=1000,
         price=10.0,
         fee=5.0,
@@ -102,11 +102,11 @@ def test_portfolio_isolation(temp_workspace):
     )
     ledger.append(tx_a)
     
-    # 2. 投资者 B 购买 600995 (2000 股 @ 12 元)
+    # 2. 投资者 B 购买 STOCK_A (2000 股 @ 12 元)
     tx_b = Transaction(
         tx_id="tx-20260607-002",
         type=TransactionType.BUY,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=2000,
         price=12.0,
         fee=6.0,
@@ -121,7 +121,7 @@ def test_portfolio_isolation(temp_workspace):
     data_provider = CachedDataProvider(workspace=temp_workspace)
     
     # Mock 行情数据以避免真实网络请求
-    market_data = {"600995": {"price": 11.0}}
+    market_data = {"STOCK_A": {"price": 11.0}}
     
     async def run_test():
         builder = SimpleStateBuilder(ledger, config_loader, data_provider)

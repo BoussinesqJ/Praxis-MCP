@@ -13,7 +13,7 @@ class TestCheckQuoteQuality:
     def test_valid_quote(self):
         """有效行情数据"""
         quote = {
-            "ticker": "600995",
+            "ticker": "STOCK_A",
             "close": 13.50,
             "open": 13.40,
             "high": 13.60,
@@ -24,17 +24,17 @@ class TestCheckQuoteQuality:
             "change": 0.10,
             "change_pct": 0.75,
         }
-        result = check_quote_quality(ticker="600995", data=quote)
+        result = check_quote_quality(ticker="STOCK_A", data=quote)
         assert result["success"] is True
         assert result["data"]["is_valid"] is True
 
     def test_missing_fields(self):
         """缺少字段的行情数据"""
         quote = {
-            "ticker": "600995",
+            "ticker": "STOCK_A",
             "close": 13.50,
         }
-        result = check_quote_quality(ticker="600995", data=quote)
+        result = check_quote_quality(ticker="STOCK_A", data=quote)
         assert result["success"] is True
         # 缺少字段会导致验证失败
         assert result["data"]["is_valid"] is False
@@ -42,7 +42,7 @@ class TestCheckQuoteQuality:
     def test_invalid_price(self):
         """无效价格"""
         quote = {
-            "ticker": "600995",
+            "ticker": "STOCK_A",
             "close": -1.0,
             "open": 13.40,
             "high": 13.60,
@@ -50,7 +50,7 @@ class TestCheckQuoteQuality:
             "volume": 1000000,
             "date": "2026-06-05",
         }
-        result = check_quote_quality(ticker="600995", data=quote)
+        result = check_quote_quality(ticker="STOCK_A", data=quote)
         assert result["success"] is True
         # 无效价格会导致验证失败
         assert result["data"]["is_valid"] is False
@@ -62,7 +62,7 @@ class TestCleanQuoteData:
     def test_clean_valid_data(self):
         """清洗有效数据"""
         quote = {
-            "ticker": "600995",
+            "ticker": "STOCK_A",
             "close": 13.50,
             "open": 13.40,
             "high": 13.60,
@@ -70,14 +70,14 @@ class TestCleanQuoteData:
             "volume": 1000000,
             "date": "2026-06-05",
         }
-        result = clean_quote_data(ticker="600995", data=quote)
+        result = clean_quote_data(ticker="STOCK_A", data=quote)
         assert result["success"] is True
         assert result["data"] is not None
 
     def test_clean_with_outliers(self):
         """清洗包含异常值的数据"""
         quote = {
-            "ticker": "600995",
+            "ticker": "STOCK_A",
             "close": 13.50,
             "open": 13.40,
             "high": 100.0,  # 异常高值
@@ -85,7 +85,7 @@ class TestCleanQuoteData:
             "volume": 1000000,
             "date": "2026-06-05",
         }
-        result = clean_quote_data(ticker="600995", data=quote)
+        result = clean_quote_data(ticker="STOCK_A", data=quote)
         assert result["success"] is True
 
 

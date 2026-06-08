@@ -62,7 +62,7 @@ pip install -e .
 praxis serve          # 启动 MCP Server
 praxis --help         # 查看帮助
 praxis portfolio get -i example -p demo   # 读取组合
-praxis market --tickers 600995,510310                  # 获取行情
+praxis market --tickers STOCK_A,ETF_300                  # 获取行情
 praxis performance -i example -p demo     # 绩效指标
 praxis validate                                        # 验证配置
 ```

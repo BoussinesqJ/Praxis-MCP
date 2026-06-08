@@ -49,7 +49,7 @@ class MockConfigLoader:
             version="1.0",
             assets=[
                 AssetEntry(
-                    ticker="600995",
+                    ticker="STOCK_A",
                     name="电力股",
                     type="stock",
                     category="power_infra",
@@ -80,7 +80,7 @@ def test_incremental_state_rebuild():
             tx = Transaction(
                 tx_id="",
                 type=TransactionType.BUY,
-                ticker="600995",
+                ticker="STOCK_A",
                 quantity=100.0,
                 price=10.0,
                 fee=5.0,

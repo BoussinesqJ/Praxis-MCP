@@ -19,7 +19,7 @@ def test_decision_transaction_linking_auto_approve(temp_workspace):
     """测试在 auto_approve=True 模式下添加交易，决策记录自动关联并更新状态为 EXECUTED"""
     # 1. 创建决策记录，状态为 PENDING_APPROVAL
     dec_res = create_decision(
-        ticker="600995",
+        ticker="STOCK_A",
         action="buy",
         confidence=0.9,
         reasoning="突破买入",
@@ -30,7 +30,7 @@ def test_decision_transaction_linking_auto_approve(temp_workspace):
     
     # 2. 直接以 auto_approve 模式写入交易，并关联该 decision_id
     tx_res = add_transaction(
-        ticker="600995",
+        ticker="STOCK_A",
         action="buy",
         quantity=1000,
         price=10.0,
@@ -53,7 +53,7 @@ def test_decision_transaction_linking_on_approve(temp_workspace):
     """测试通过标准审批流程批准交易时，关联决策自动更新并更新状态为 EXECUTED"""
     # 1. 创建决策记录
     dec_res = create_decision(
-        ticker="600995",
+        ticker="STOCK_A",
         action="buy",
         confidence=0.85,
         reasoning="回调买入",
@@ -64,7 +64,7 @@ def test_decision_transaction_linking_on_approve(temp_workspace):
     
     # 2. 创建需审批交易，关联 decision_id
     tx_res = add_transaction(
-        ticker="600995",
+        ticker="STOCK_A",
         action="buy",
         quantity=1000,
         price=10.0,

@@ -16,7 +16,7 @@
   "success": true,
   "data": {
     "strategy_type": "grid_value",
-    "version": "v9.0",
+    "version": "v1.0",
     "assets": [...],
     "sentinels": {...}
   }
@@ -30,15 +30,15 @@
 **参数**：
 - `investor` (string, 必需): 投资者ID
 - `portfolio` (string, 必需): 组合ID
-- `ticker` (string, 必需): 标的代码（如 600995）
+- `ticker` (string, 必需): 标的代码（如 STOCK_A）
 
 **返回**：
 ```json
 {
   "success": true,
   "data": {
-    "ticker": "600995",
-    "name": "南网储能",
+    "ticker": "STOCK_A",
+    "name": "示例股票A",
     "grid": [...],
     "stop_loss": {...},
     "take_profit": [...]
@@ -58,7 +58,7 @@
 {
   "success": true,
   "data": {
-    "600995": {
+    "STOCK_A": {
       "price": 13.50,
       "change": 0.15,
       "change_pct": 1.12,
@@ -108,7 +108,7 @@
       {
         "rule": "access_rules.blacklist_market",
         "level": "advisory",
-        "message": "标的 600995 不在禁入板块",
+        "message": "标的 STOCK_A 不在禁入板块",
         "passed": true
       }
     ],
@@ -178,7 +178,7 @@
   "data": {
     "status": "confirmed",
     "tx_id": "tx-20260601-001",
-    "message": "交易已确认: buy 600995 100@13.5"
+    "message": "交易已确认: buy STOCK_A 100@13.5"
   }
 }
 ```
@@ -216,7 +216,7 @@
   "success": true,
   "data": {
     "decision_id": "dc-20260601-001",
-    "ticker": "600995",
+    "ticker": "STOCK_A",
     "action": "buy",
     "confidence": 0.75,
     "reasoning": "网格触发",
@@ -261,7 +261,7 @@
   "data": {
     "decision_id": "dc-20260601-001",
     "status": "pending_approval",
-    "message": "决策已创建: buy 600995，信心=0.75"
+    "message": "决策已创建: buy STOCK_A，信心=0.75"
   }
 }
 ```
@@ -342,7 +342,7 @@
   "data": {
     "status": "pending_approval",
     "field": "version",
-    "old_value": "v9.0",
+    "old_value": "v1.0",
     "new_value": "v10.0",
     "message": "修改预览: version = v10.0，需人工审批后写入"
   }

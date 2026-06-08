@@ -18,7 +18,7 @@ def test_chained_ledger_integrity():
         tx1 = Transaction(
             tx_id="",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100.0,
             price=10.0,
             idempotency_key="key-001"
@@ -26,7 +26,7 @@ def test_chained_ledger_integrity():
         tx2 = Transaction(
             tx_id="",
             type=TransactionType.SELL,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=50.0,
             price=12.0,
             idempotency_key="key-002"
@@ -60,14 +60,14 @@ def test_chained_ledger_tampering_detection():
         tx1 = Transaction(
             tx_id="tx-1",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100.0,
             price=10.0,
         )
         tx2 = Transaction(
             tx_id="tx-2",
             type=TransactionType.SELL,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=50.0,
             price=12.0,
         )

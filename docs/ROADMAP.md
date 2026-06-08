@@ -54,7 +54,7 @@
 ### Bug 修复
 - 修复双 Workspace 路径混乱（PRAXIS_WORKSPACE 环境变量）
 - 修复 team prompt 加载不完整（teams/ 目录结构对齐）
-- 修复场外基金 016874 市值为 0 的问题
+- 修复场外基金 FUND_A 市值为 0 的问题
 - 修复绩效 tag 隔离导致买卖配对断裂
 
 ### 测试

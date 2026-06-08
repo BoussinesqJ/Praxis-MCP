@@ -49,10 +49,10 @@ def ws_with_investor(ws):
             "description": "网格价值策略",
         },
         "assets": [
-            {"ticker": "016874", "name": "广发远见智选C", "type": "offshore_fund"},
-            {"ticker": "600995", "name": "南网储能", "type": "stock"},
-            {"ticker": "510310", "name": "沪深300ETF", "type": "etf"},
-            {"ticker": "589850", "name": "科创50ETF", "type": "etf"},
+            {"ticker": "FUND_A", "name": "示例基金A", "type": "offshore_fund"},
+            {"ticker": "STOCK_A", "name": "示例股票A", "type": "stock"},
+            {"ticker": "ETF_300", "name": "示例ETF300", "type": "etf"},
+            {"ticker": "ETF_500", "name": "示例ETF500", "type": "etf"},
         ],
     }
     (inv_dir / "portfolio.yaml").write_text(
@@ -71,7 +71,7 @@ def ws_with_ledger(ws_with_investor):
         {
             "tx_id": "tx-20260606-001",
             "type": "buy",
-            "ticker": "600995",
+            "ticker": "STOCK_A",
             "quantity": 100,
             "price": 14.318,
             "status": "confirmed",
@@ -81,7 +81,7 @@ def ws_with_ledger(ws_with_investor):
         {
             "tx_id": "tx-20260606-002",
             "type": "buy",
-            "ticker": "510310",
+            "ticker": "ETF_300",
             "quantity": 400,
             "price": 4.826,
             "status": "confirmed",
@@ -91,7 +91,7 @@ def ws_with_ledger(ws_with_investor):
         {
             "tx_id": "tx-20260606-003",
             "type": "buy",
-            "ticker": "589850",
+            "ticker": "ETF_500",
             "quantity": 1875,
             "price": 1.600,
             "status": "confirmed",
@@ -101,7 +101,7 @@ def ws_with_ledger(ws_with_investor):
         {
             "tx_id": "tx-20260606-pending-001",
             "type": "buy",
-            "ticker": "016874",
+            "ticker": "FUND_A",
             "quantity": 500,
             "price": 1.95,
             "status": "pending",
@@ -229,7 +229,7 @@ class TestSingleInvestor:
     def test_portfolio_tickers(self, ws_with_investor):
         port = discover_workspace(str(ws_with_investor))["data"]["investors"][0]["portfolios"][0]
         assert port["asset_count"] == 4
-        assert set(port["tickers"]) == {"016874", "600995", "510310", "589850"}
+        assert set(port["tickers"]) == {"FUND_A", "STOCK_A", "ETF_300", "ETF_500"}
 
 
 # ---------------------------------------------------------------------------
@@ -253,16 +253,16 @@ class TestLedgerScanning:
 
     def test_unique_tickers(self, ws_with_ledger):
         ledger = discover_workspace(str(ws_with_ledger))["data"]["ledger"]
-        assert set(ledger["unique_tickers"]) == {"016874", "600995", "510310", "589850"}
+        assert set(ledger["unique_tickers"]) == {"FUND_A", "STOCK_A", "ETF_300", "ETF_500"}
 
     def test_corrupt_line_warning(self, ws_with_investor):
         """Corrupt JSONL lines should be skipped with a warning."""
         ledger_dir = ws_with_investor / "data" / "ledger"
         ledger_dir.mkdir(parents=True)
         with open(ledger_dir / "transactions.jsonl", "w", encoding="utf-8") as f:
-            f.write('{"tx_id": "tx-001", "ticker": "600995", "status": "confirmed"}\n')
+            f.write('{"tx_id": "tx-001", "ticker": "STOCK_A", "status": "confirmed"}\n')
             f.write("NOT VALID JSON\n")
-            f.write('{"tx_id": "tx-002", "ticker": "510310", "status": "confirmed"}\n')
+            f.write('{"tx_id": "tx-002", "ticker": "ETF_300", "status": "confirmed"}\n')
 
         data = discover_workspace(str(ws_with_investor))["data"]
         assert data["ledger"]["total_records"] == 2

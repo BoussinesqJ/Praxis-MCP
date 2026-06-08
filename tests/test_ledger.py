@@ -22,7 +22,7 @@ def sample_tx():
     return Transaction(
         tx_id="",
         type=TransactionType.BUY,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=100,
         price=13.50,
         fee=5.0,
@@ -43,7 +43,7 @@ class TestLedgerAppend:
         tx1 = Transaction(
             tx_id="",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
             idempotency_key="test-key-001",
@@ -51,7 +51,7 @@ class TestLedgerAppend:
         tx2 = Transaction(
             tx_id="",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
             idempotency_key="test-key-001",
@@ -68,7 +68,7 @@ class TestLedgerAppend:
         tx1 = Transaction(
             tx_id="",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
             idempotency_key="key-001",
@@ -76,7 +76,7 @@ class TestLedgerAppend:
         tx2 = Transaction(
             tx_id="",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
             idempotency_key="key-002",
@@ -106,7 +106,7 @@ class TestLedgerAtomicity:
         assert len(lines) == 1
 
         data = json.loads(lines[0])
-        assert data["ticker"] == "600995"
+        assert data["ticker"] == "STOCK_A"
 
     def test_multiple_appends(self, temp_ledger):
         """多次追加"""
@@ -114,7 +114,7 @@ class TestLedgerAtomicity:
             tx = Transaction(
                 tx_id=f"tx-test-{i:03d}",
                 type=TransactionType.BUY,
-                ticker="600995",
+                ticker="STOCK_A",
                 quantity=100,
                 price=13.50,
             )
@@ -136,7 +136,7 @@ class TestLedgerReverse:
         buy_tx = Transaction(
             tx_id="",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
             fee=5.0,
@@ -160,7 +160,7 @@ class TestLedgerReverse:
         sell_tx = Transaction(
             tx_id="",
             type=TransactionType.SELL,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=16.35,
             fee=5.0,
@@ -188,7 +188,7 @@ class TestLedgerQuery:
             tx = Transaction(
                 tx_id=f"tx-{i:03d}",
                 type=TransactionType.BUY,
-                ticker="600995",
+                ticker="STOCK_A",
                 quantity=100,
                 price=13.50,
             )
@@ -202,30 +202,30 @@ class TestLedgerQuery:
         tx1 = Transaction(
             tx_id="tx-001",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
         )
         tx2 = Transaction(
             tx_id="tx-002",
             type=TransactionType.BUY,
-            ticker="510310",
+            ticker="ETF_300",
             quantity=400,
             price=4.826,
         )
         temp_ledger.append(tx1)
         temp_ledger.append(tx2)
 
-        results = temp_ledger.list(ticker="600995")
+        results = temp_ledger.list(ticker="STOCK_A")
         assert len(results) == 1
-        assert results[0].ticker == "600995"
+        assert results[0].ticker == "STOCK_A"
 
     def test_get_by_id(self, temp_ledger, sample_tx):
         """按 ID 查询"""
         tx_id = temp_ledger.append(sample_tx)
         result = temp_ledger.get(tx_id)
         assert result is not None
-        assert result.ticker == "600995"
+        assert result.ticker == "STOCK_A"
 
     def test_get_nonexistent(self, temp_ledger):
         """查询不存在的记录"""

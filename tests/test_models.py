@@ -73,11 +73,11 @@ class TestPortfolio:
             strategy_type="grid_value",
             strategy_template="grid_value",
             created_at="2026-05-18",
-            version="v9.0",
+            version="v1.0",
             assets=[
                 AssetEntry(
-                    ticker="600995",
-                    name="南网储能",
+                    ticker="STOCK_A",
+                    name="示例股票A",
                     type=AssetType.STOCK,
                     category=AssetCategory.POWER_INFRA,
                     target_weight_pct=12,
@@ -85,7 +85,7 @@ class TestPortfolio:
             ],
         )
         assert len(portfolio.assets) == 1
-        assert portfolio.assets[0].ticker == "600995"
+        assert portfolio.assets[0].ticker == "STOCK_A"
 
 
 class TestTransaction:
@@ -95,7 +95,7 @@ class TestTransaction:
         tx = Transaction(
             tx_id="tx-20260601-001",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
             fee=5.0,
@@ -107,7 +107,7 @@ class TestTransaction:
         tx = Transaction(
             tx_id="tx-20260601-001",
             type=TransactionType.BUY,
-            ticker="600995",
+            ticker="STOCK_A",
             quantity=100,
             price=13.50,
         )
@@ -130,7 +130,7 @@ class TestDecisionRecord:
     def test_decision_record(self):
         record = DecisionRecord(
             decision_id="dc-20260601-001",
-            ticker="600995",
+            ticker="STOCK_A",
             action="buy",
             confidence=0.75,
             reasoning="网格触发",

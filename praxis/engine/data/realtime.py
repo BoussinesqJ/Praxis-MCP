@@ -65,7 +65,7 @@ class TencentDataProvider(DataProvider):
                 break
             ticker = original_tickers[i]
 
-            # 格式: v_sh600995="1~南网储能~600995~13.38~13.45~..."
+            # 格式: v_shSTOCK_A="1~示例股票A~STOCK_A~13.38~13.45~..."
             match = re.search(r'"(.+)"', line)
             if not match:
                 continue

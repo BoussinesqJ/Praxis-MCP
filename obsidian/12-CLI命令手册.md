@@ -13,12 +13,12 @@ praxis portfolio get --investor example --portfolio demo
 
 ### 标的详情
 ```bash
-praxis asset --investor example --portfolio demo --ticker 600995
+praxis asset --investor example --portfolio demo --ticker STOCK_A
 ```
 
 ### 行情数据
 ```bash
-praxis market quote --tickers 600995,510310
+praxis market quote --tickers STOCK_A,ETF_300
 ```
 
 ### 对账计算
@@ -29,7 +29,7 @@ praxis reconcile --investor example --portfolio demo
 ### 约束检查
 ```bash
 praxis constraints --investor example --portfolio demo \
-  --action buy --ticker 600995 --amount 3000
+  --action buy --ticker STOCK_A --amount 3000
 ```
 
 ### 状态查询
@@ -40,7 +40,7 @@ praxis state --investor example --portfolio demo
 ### 交易账本
 ```bash
 praxis ledger list
-praxis ledger add --ticker 600995 --action buy --quantity 100 --price 13.50
+praxis ledger add --ticker STOCK_A --action buy --quantity 100 --price 13.50
 praxis ledger reverse --tx-id tx-20260601-001 --reason "价格错误"
 ```
 
@@ -48,7 +48,7 @@ praxis ledger reverse --tx-id tx-20260601-001 --reason "价格错误"
 ```bash
 praxis decision list
 praxis decision get --decision-id dc-20260601-001
-praxis decision create --ticker 600995 --action buy --confidence 0.75 --reasoning "网格触发"
+praxis decision create --ticker STOCK_A --action buy --confidence 0.75 --reasoning "网格触发"
 ```
 
 ### 绩效指标

@@ -38,10 +38,10 @@ portfolio:
   strategy_type: "grid_value"
   strategy_template: "grid_value"
   created_at: "2026-05-18"
-  version: "v9.0"
+  version: "v1.0"
 assets:
-  - ticker: "600995"
-    name: "南网储能"
+  - ticker: "STOCK_A"
+    name: "示例股票A"
     type: "stock"
     category: "power_infra"
     target_weight_pct: 20
@@ -59,7 +59,7 @@ def test_performance_capital_override(temp_workspace):
     tx = Transaction(
         tx_id="tx-20260607-001",
         type=TransactionType.DIVIDEND,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=0,
         price=7000.0, # price 复用为分红金额
         fee=0.0,
@@ -102,7 +102,7 @@ def test_performance_win_rate_and_profit_loss(temp_workspace):
     tx_buy1 = Transaction(
         tx_id="tx-buy-1",
         type=TransactionType.BUY,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=100,
         price=10.0,
         fee=0.0,
@@ -116,7 +116,7 @@ def test_performance_win_rate_and_profit_loss(temp_workspace):
     tx_sell1 = Transaction(
         tx_id="tx-sell-1",
         type=TransactionType.SELL,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=100,
         price=12.0,
         fee=0.0,
@@ -130,7 +130,7 @@ def test_performance_win_rate_and_profit_loss(temp_workspace):
     tx_buy2 = Transaction(
         tx_id="tx-buy-2",
         type=TransactionType.BUY,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=100,
         price=15.0,
         fee=0.0,
@@ -155,7 +155,7 @@ def test_performance_win_rate_and_profit_loss(temp_workspace):
     tx_sell2 = Transaction(
         tx_id="tx-sell-2",
         type=TransactionType.SELL,
-        ticker="600995",
+        ticker="STOCK_A",
         quantity=50,
         price=8.0,
         fee=0.0,

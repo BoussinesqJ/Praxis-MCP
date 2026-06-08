@@ -95,14 +95,14 @@ praxis --help
 praxis portfolio get --investor example --portfolio demo
 
 # 获取行情数据
-praxis market quote --tickers 600995,510310
+praxis market quote --tickers STOCK_A,ETF_300
 
 # 对账计算
 praxis reconcile --investor example --portfolio demo
 
 # 检查约束
 praxis constraints --investor example --portfolio demo \
-  --action buy --ticker 600995 --amount 3000
+  --action buy --ticker STOCK_A --amount 3000
 
 # 查看交易记录
 praxis ledger list
