@@ -5,7 +5,7 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
 
-## [v1.6.0] - 2026-06-08
+## [r1.1.0] - 2026-06-08
 
 ### 新增
 - **AlphaEar 金融技能集成**：新闻聚合、情感分析、股票基本面数据

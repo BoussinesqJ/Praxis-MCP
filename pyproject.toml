@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "praxis"
-version = "v1.6.0"
+version = "r1.1.0"
 description = "PRAXIS - 投研纪律系统"
 readme = "README.md"
 requires-python = ">=3.11"
