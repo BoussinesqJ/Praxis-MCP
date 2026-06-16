@@ -7,7 +7,6 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![MCP Server](https://img.shields.io/badge/MCP-Server-green.svg)](https://modelcontextprotocol.io/)
 [![MCP Tools](https://img.shields.io/badge/MCP_Tools-28-blueviolet.svg)](#mcp-工具)
-[![Skills](https://img.shields.io/badge/Skills-13-orange.svg)](#skill-体系)
 [![v4.0.0](https://img.shields.io/badge/version-v4.0.0-blue.svg)](#)
 
 ---
@@ -237,26 +236,6 @@ praxis serve
 
 ---
 
-## Skill 体系 (13 个)
-
-| Skill | 功能 | 调用方式 |
-|:---|:---|:---|
-| `daily-review` | 日终复盘 | 10 步串行：对账 → 快照 → 绩效 → 哨兵 → 归因 |
-| `trading-session` | 盘前策略 | 9 步串行：哨兵 → 估值 → 研判 → 交易矩阵 |
-| `weekly-review` | 周度复盘 | 7 步串行：绩效归因 + 纪律代价 + 元进化 |
-| `monthly-review` | 月度复盘 | `cascade_review_tool(mode="monthly")` |
-| `quarterly-review` | 季度复盘 | `cascade_review_tool(mode="quarterly")` |
-| `annual-review` | 年度复盘 | `cascade_review_tool(mode="annual")` |
-| `three-team` | 三团队联合研判 | ASRG 战术 + Masters 哲学 + Trading 执行 |
-| `quick-check` | 秒级巡检 | 引力热力图 + 哨兵核检 |
-| `reconcile` | 文档一致性校验 | 持仓 + 规则编号 + 三位一体隔离 |
-| `stock-query` | 非持仓标的查询 | Speed Insight / Full Audit 双路径 |
-| `praxis` | Praxis 核心引擎 | 规则引擎 + LCD + 元进化 |
-| `alphaear-news` | AlphaEar 新闻 | NewsNow API，10+ 信源 |
-| `alphaear-sentiment` | AlphaEar 情感 | 增强关键词 + 否定翻转 |
-
----
-
 ## 数据源架构
 
 ### 四级降级链（单点故障隔离）
@@ -292,7 +271,7 @@ Tier 4: akshare (HTTP)             ← 最终兜底，10s 超时斩杀
 
 ```
 🟥 Tier 0: 红线法典     project.md / AGENTS.md / REDLINE_RULES.md / soul.md
-🟧 Tier 1: AI 行为宪法  SOP_INDEX.md (附录) / cascade_review / Skills / MEMORY.md
+🟧 Tier 1: AI 行为宪法  SOP_INDEX.md (附录) / cascade_review / MEMORY.md
 🟨 Tier 2: 架构蓝图     设计文档 / ROADMAP.md
 🟩 Tier 3: 参考字典     API.md / README.md / DEVELOPMENT.md
 ```
@@ -332,7 +311,7 @@ Praxis/
 │   ├── tools/                   # MCP 工具实现
 │   ├── meta/                    # 元进化引擎
 │   └── mcp_server.py            # MCP 服务器入口
-├── .reasonix/skills/            # 13 个 Skill 模板
+├── obsidian/                  # 系统架构文档（Obsidian 推荐）
 ├── docs/
 │   ├── SOP_INDEX.md  # 单工具链式 SOP（9 大场景）
 │   └── ...
