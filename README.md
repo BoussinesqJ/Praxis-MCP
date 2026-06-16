@@ -374,3 +374,15 @@ MIT License
 - [go-stock](https://github.com/ArvinLovegood/go-stock) - 6.4k stars
 - [a-stock-data](https://github.com/simonlin1212/a-stock-data) - 3.9k stars
 - [adata](https://github.com/1nchaos/adata) - 4.7k stars
+
+---
+
+## 📖 文档索引
+
+| 文档 | 语言 | 说明 |
+|---|---|---|
+| `README.md` | 中文 | 项目总览（本文件） |
+| `README.en.md` | English | Project overview |
+| `QUICKSTART.md` | 中文 | 5 分钟快速上手 |
+| `AI_INTEGRATION.md` | 中文 | AI 客户端 MCP 接入指南 |
+| `tpl/skills-guide.md` | 中文 | 工作流链路参考 |
