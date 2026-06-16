@@ -1,0 +1,46 @@
+# 📊 Praxis 投研系统金融状态卡
+
+> 实时对账校准：{{DATE}} 
+> 策略版本：{{VERSION}}
+
+## 💼 账户概况
+
+- **总资产**：{{TOTAL_ASSETS}} CNY
+- **当前系统状态**：{{SYSTEM_STATE}}
+- **浮动盈亏**：**{{PNL}}**
+- **资产配比**：
+  * 已投入 (市值)：{{POSITIONS_VALUE}} ({{POSITIONS_PCT}})
+  * 可用现金：{{CASH}} ({{CASH_PCT}})
+
+---
+
+## 📊 持仓明细
+
+| 标的 | 买入均价 | 持仓数量 | 成本 | 最新市值 | 浮盈亏 | 状态 |
+|------|:------:|:----:|:----:|:----:|:------:| :---: |
+| {{TICKER}} | {{AVG_COST}} | {{QTY}} | {{COST}} | {{MV}} | **{{PNL}}** | {{STATUS}} |
+| **合计** | | | **{{TOTAL_COST}}** | **{{TOTAL_MV}}** | **{{TOTAL_PNL}}** | |
+
+---
+
+## 🎯 Praxis 动态执行矩阵
+
+### {{POSITION_1_TICKER}} (动态网格)
+*   **网格区间**：{{LOW_PRICE}} (低吸) ~ {{HIGH_PRICE}} (高抛)
+*   **止损底线**：{{STOP_PRICE}}
+*   **执行**：{{EXECUTION_PLAN}}
+
+---
+
+## 🔄 日终复盘摘要
+
+### 物理对账
+- **账本净值**：{{LEDGER_NAV}}
+- **券商净值**：{{BROKER_NAV}}
+- **偏差**：{{DIFF}} {{STATUS}}
+
+### 纪律审计
+- **违规**：{{VIOLATIONS}}
+- **纪律代价**：{{DISCIPLINE_COST}}
+
+---

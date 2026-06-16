@@ -1,0 +1,422 @@
+{
+  "version": "1.0.0",
+  "description": "Praxis 规则回归测试违规样本库",
+  "last_updated": "2026-06-11",
+  "rules_version": "v11.4",
+  "scenarios": [
+    {
+      "id": "rule1_sentiment_trigger_level1",
+      "rule": "Rule 1",
+      "description": "情绪起爆器一级恐慌：哨兵≤2 + RSI<20 → 持仓上限放宽至20%",
+      "source": "绝对防守期恐慌场景",
+      "input": {
+        "sentinel_bullish": 2,
+        "rsi_14": 18,
+        "current_position_pct": 15.0,
+        "new_trade_pct": 5.0
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 1",
+        "reason": "一级恐慌起爆，持仓上限放宽至20%"
+      }
+    },
+    {
+      "id": "rule1_sentiment_trigger_level2",
+      "rule": "Rule 1",
+      "description": "情绪起爆器二级恐慌：哨兵≤2 + RSI<15 → 持仓上限放宽至30%",
+      "input": {
+        "sentinel_bullish": 1,
+        "rsi_14": 12,
+        "current_position_pct": 25.0,
+        "new_trade_pct": 5.0
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 1",
+        "reason": "二级恐慌起爆，持仓上限放宽至30%"
+      }
+    },
+    {
+      "id": "rule2_position_limit_defense",
+      "rule": "Rule 2",
+      "description": "绝对防守期持仓超10%应被拦截",
+      "source": "2026-06-10 哨兵2个，持仓10.1%",
+      "input": {
+        "sentinel_bullish": 2,
+        "current_position_pct": 10.1,
+        "new_trade_pct": 5.0
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 2",
+        "conflict": "仓位红线 10%（绝对防守期）"
+      }
+    },
+    {
+      "id": "rule2_position_limit_with_buffer",
+      "rule": "Rule 2",
+      "description": "绝对防守期 + Rule 8 追高 → 允许15%缓冲带",
+      "input": {
+        "sentinel_bullish": 2,
+        "current_position_pct": 12.0,
+        "new_trade_pct": 3.0,
+        "is_rule8_chase": true
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 2",
+        "reason": "Rule 8 追高允许15%缓冲带"
+      }
+    },
+    {
+      "id": "rule2_position_limit_expansion",
+      "rule": "Rule 2",
+      "description": "适度试探期（哨兵3个）持仓上限35%",
+      "input": {
+        "sentinel_bullish": 3,
+        "current_position_pct": 30.0,
+        "new_trade_pct": 5.0
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 2",
+        "reason": "适度试探期，持仓上限35%"
+      }
+    },
+    {
+      "id": "rule2_position_limit_expansion_exceeded",
+      "rule": "Rule 2",
+      "description": "适度试探期持仓超35%应被拦截",
+      "input": {
+        "sentinel_bullish": 3,
+        "current_position_pct": 34.0,
+        "new_trade_pct": 5.0
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 2",
+        "conflict": "仓位红线 35%（适度试探期）"
+      }
+    },
+    {
+      "id": "rule3_condition_order_suspension_day1",
+      "rule": "Rule 3",
+      "description": "条件单退场第1天：暂停新建条件单",
+      "input": {
+        "sentinel_bullish": 2,
+        "consecutive_days_below_2": 1,
+        "action": "create_condition_order"
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 3",
+        "reason": "条件单退场第1天，暂停新建"
+      }
+    },
+    {
+      "id": "rule3_condition_order_cancel_day2",
+      "rule": "Rule 3",
+      "description": "条件单退场第2天：取消存量条件单",
+      "input": {
+        "sentinel_bullish": 1,
+        "consecutive_days_below_2": 2,
+        "action": "cancel_existing_orders"
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 3",
+        "action": "取消所有存量条件单"
+      }
+    },
+    {
+      "id": "rule4_dual_block",
+      "rule": "Rule 4",
+      "description": "PE>80%且PB>70%时宽基加仓应被拦截",
+      "source": "2026-06-10 沪深300 PE 82%",
+      "input": {
+        "pe_percentile": 0.82,
+        "pb_percentile": 0.75,
+        "ticker": "510310",
+        "asset_type": "etf_index"
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 4",
+        "conflict": "估值双重拦截（PE 82% + PB 75%）"
+      }
+    },
+    {
+      "id": "rule4_pe_only_warning",
+      "rule": "Rule 4",
+      "description": "PE>80%但PB未超标应预警非拦截",
+      "source": "2026-06-10 PE 82% + PB 未超标",
+      "input": {
+        "pe_percentile": 0.82,
+        "pb_percentile": 0.45,
+        "ticker": "510310",
+        "asset_type": "etf_index"
+      },
+      "expected": {
+        "allowed": true,
+        "warning": "PE 82% 预警中（PB 45% 未超标）",
+        "rule": "Rule 4"
+      }
+    },
+    {
+      "id": "rule4_stock_exempt",
+      "rule": "Rule 4",
+      "description": "个股和行业ETF不受 Rule 4 估值拦截",
+      "input": {
+        "pe_percentile": 0.9,
+        "pb_percentile": 0.85,
+        "ticker": "000001",
+        "asset_type": "stock"
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 4",
+        "reason": "个股不受估值底线拦截"
+      }
+    },
+    {
+      "id": "rule5_tech_exposure_limit",
+      "rule": "Rule 5",
+      "description": "科技暴露超25%应被拦截",
+      "input": {
+        "tech_exposure_pct": 26.0,
+        "new_trade_tech_pct": 5.0
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 5",
+        "conflict": "科技暴露 26% 超过 25% 上限"
+      }
+    },
+    {
+      "id": "rule5_tech_exposure_etf_weight",
+      "rule": "Rule 5",
+      "description": "科创50ETF按70%折算科技暴露",
+      "input": {
+        "tech_exposure_pct": 3.0,
+        "new_trade_tech_pct": 0
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 5",
+        "reason": "科技暴露 3% 在 25% 上限内"
+      }
+    },
+    {
+      "id": "rule7_grid_buy_price_in_range",
+      "rule": "Rule 7",
+      "description": "网格内价格到位即可买（不需要技术指标）",
+      "input": {
+        "price_in_grid": true,
+        "grid_buy_price": 1.55,
+        "current_price": 1.54,
+        "rule4_blocked": false
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 7",
+        "reason": "网格内价格到位，Rule 4 未拦截"
+      }
+    },
+    {
+      "id": "rule7_grid_buy_price_not_in_range",
+      "rule": "Rule 7",
+      "description": "网格外追高需 RSI<30 + 缩量确认",
+      "input": {
+        "price_in_grid": false,
+        "rsi_14": 35,
+        "volume_ratio": 1.2,
+        "current_price": 52.0
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 7",
+        "reason": "网格外追高需 RSI<30 + 量比<1.0"
+      }
+    },
+    {
+      "id": "rule8_chase_limit",
+      "rule": "Rule 8",
+      "description": "追高金额超总资产3%应被拦截",
+      "input": {
+        "total_assets": 70000,
+        "chase_amount": 3000,
+        "limit_pct": 0.03
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 8",
+        "conflict": "追高 ¥3,000 超过上限 ¥2,100（总资产×3%）"
+      }
+    },
+    {
+      "id": "rule8_chase_within_limit",
+      "rule": "Rule 8",
+      "description": "追高金额在3%限制内",
+      "input": {
+        "total_assets": 70000,
+        "chase_amount": 2000,
+        "limit_pct": 0.03
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 8",
+        "reason": "追高 ¥2,000 在上限 ¥2,100 内"
+      }
+    },
+    {
+      "id": "rule9_minimum_trade",
+      "rule": "Rule 9",
+      "description": "单笔交易低于¥3000应被拦截",
+      "input": {
+        "trade_amount": 2500
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Rule 9",
+        "conflict": "单笔金额 ¥2,500 低于最低 ¥3,000"
+      }
+    },
+    {
+      "id": "rule2_vs_rule7_conflict",
+      "rule": "LCD",
+      "description": "仓位已满但价格到位 → LCD应触发仲裁",
+      "source": "Rule 2 与 Rule 7 真实冲突场景",
+      "input": {
+        "sentinel_bullish": 2,
+        "current_position_pct": 10.0,
+        "price_in_grid": true,
+        "total_assets": 70000,
+        "size": 5000
+      },
+      "expected": {
+        "allowed": false,
+        "resolution": "LCD_MASTERS_ARBITRATION"
+      }
+    },
+    {
+      "id": "rule4_vs_rule7_conflict",
+      "rule": "LCD",
+      "description": "估值拦截但价格到位 → LCD应阻止",
+      "input": {
+        "sentinel_bullish": 3,
+        "current_position_pct": 15.0,
+        "pe_percentile": 0.85,
+        "pb_percentile": 0.75,
+        "price_in_grid": true,
+        "ticker": "510310",
+        "total_assets": 70000,
+        "size": 5000,
+        "asset_type": "etf_index"
+      },
+      "expected": {
+        "allowed": false,
+        "resolution": "LCD_REJECT"
+      }
+    },
+    {
+      "id": "protocol1_pda_anchor",
+      "rule": "Protocol 1",
+      "description": "指数价格低于PDA锚点 → 撤销所有条件单",
+      "input": {
+        "index_price": 3950,
+        "pda_anchor": 4000
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Protocol 1",
+        "reason": "指数 3950 < PDA 4000"
+      }
+    },
+    {
+      "id": "protocol3_human_approval",
+      "rule": "Protocol 3",
+      "description": "AI静默更新持仓应被拦截",
+      "input": {
+        "action": "update_position",
+        "user_approved": false
+      },
+      "expected": {
+        "allowed": false,
+        "rule": "Protocol 3",
+        "conflict": "人机协同红线：未获用户授权"
+      }
+    },
+    {
+      "id": "000001_stop_loss_trigger",
+      "rule": "Rule 3 + 止损",
+      "description": "南网雪崩逼近止损 → 应触发条件单退场",
+      "source": "2026-05-28 示例标的暴跌",
+      "input": {
+        "ticker": "000001",
+        "current_price": 12.05,
+        "stop_loss_price": 12.0,
+        "distance_pct": 0.4
+      },
+      "expected": {
+        "warning": "距止损 0.4%",
+        "action": "条件单退场准备",
+        "rule": "Rule 3"
+      }
+    },
+    {
+      "id": "000002_opportunity_loss",
+      "rule": "Rule 7 + 买点修正",
+      "description": "中天踏空 → 买入区间过低导致三次错失",
+      "source": "2026-06-03/05/08 中天科技连续踏空",
+      "input": {
+        "ticker": "000002",
+        "buy_range_low": 48.5,
+        "buy_range_high": 50.5,
+        "actual_low": 51.2,
+        "miss_count": 3
+      },
+      "expected": {
+        "missed": true,
+        "reason": "买区过低未触及",
+        "suggestion": "买点上移至 MA10-MA5 区间"
+      }
+    },
+    {
+      "id": "rule2_rule7_rule1_triple_interaction",
+      "rule": "LCD",
+      "description": "三规则联动：哨兵2个 + 持仓10% + 价格到位 + RSI<20",
+      "input": {
+        "sentinel_bullish": 2,
+        "current_position_pct": 10.0,
+        "price_in_grid": true,
+        "rsi_14": 18
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 1 + Rule 7",
+        "reason": "Rule 1 一级恐慌起爆放宽至20%，Rule 7 价格到位，双重放行"
+      }
+    },
+    {
+      "id": "SCENARIO_026_C4_BYPASS",
+      "rule": "Rule 2",
+      "description": "Alpha 逻辑豁免权：强逻辑标的在绝对防守期可突破仓位限制",
+      "source": "v2.2 积极型进化",
+      "input": {
+        "sentinel_bullish": 2,
+        "current_position_pct": 10.0,
+        "new_trade_pct": 3.0,
+        "alpha_bypass": true,
+        "alpha_limit_pct": 5.0,
+        "in_strong_gravity": true,
+        "volume_ratio": 0.7
+      },
+      "expected": {
+        "allowed": true,
+        "rule": "Rule 2",
+        "reason": "逻辑豁免权生效"
+      }
+    }
+  ]
+}

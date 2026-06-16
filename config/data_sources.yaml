@@ -1,0 +1,242 @@
+version: '3.1'
+# Phase 1 数据源架构重构 (MX 优先级修正)
+# 基于 Gemini 架构审查决断 + 主理人提醒
+
+principle: |
+  Tier 1: MX (API+Key，最高优先级，无封IP风险)
+  Tier 2: mootdx/tencent (不封IP，极速降级)
+  Tier 3/4: 同花顺/东财 (长尾数据，限流使用)
+
+providers:
+  # Tier 1: 官方 API + Key（绝对主力）
+  tier1_primary:
+    mx:
+      id: mx_api
+      protocol: http
+      endpoint: https://mkapi2.dfcfs.com/finskillshub/api/claw/query
+      auth: api_key
+      risk: "无封IP风险（官方API）"
+      covers:
+        - realtime_quote
+        - kline
+        - pe_pb
+        - revenue
+        - net_profit
+        - roe
+        - debt_ratio
+      priority: 1
+
+  # Tier 2: 不封IP（极速降级）
+  tier2_fallback:
+    mootdx:
+      id: mootdx_tdx
+      protocol: tcp
+      endpoint: "7709"
+      auth: none
+      risk: "不封IP"
+      covers:
+        - kline_multi_period
+        - order_book_5level
+        - tick_by_tick
+        - financial_snapshot
+        - f10_data
+      priority: 2
+    
+    tencent_direct:
+      id: tencent_finance
+      protocol: http
+      endpoint: http://qt.gtimg.cn/q=
+      encoding: gbk
+      auth: none
+      risk: "不封IP"
+      covers:
+        - price
+        - pe_ttm
+        - pb
+        - market_cap
+        - turnover
+        - price_limits
+        - index
+        - etf
+      priority: 3
+
+  # Tier 3: 低风险（备用）
+  tier3_backup:
+    ths_northbound:
+      id: ths_northbound
+      protocol: http
+      auth: none
+      risk: "极低"
+      covers:
+        - northbound_realtime
+        - northbound_history
+      priority: 10
+    
+    akshare:
+      id: akshare
+      protocol: http
+      auth: none
+      risk: "低"
+      note: "仅在基础数据源缺失时调用"
+      covers:
+        - macro_indicators
+        - research_report_stats
+        - long_tail_data
+      priority: 15
+
+  # Tier 4: 限流使用（独有数据）
+  tier4_rate_limited:
+    eastmoney:
+      id: eastmoney
+      protocol: http
+      auth: none
+      risk: "中 - 有风控会封IP"
+      note: "所有请求必须经过 em_get() 限流"
+      covers:
+        - fund_flow_minute
+        - fund_flow_120day
+        - dragon_tiger
+        - lockup_expiry
+        - margin_trading
+        - block_trades
+        - shareholder_count
+        - dividends
+        - research_reports
+        - stock_news
+        - global_news
+      rate_limit:
+        min_interval: 1.0
+        jitter_max: 0.5
+        max_per_second: 5
+        max_concurrent: 10
+      priority: 20
+
+  # 禁用的数据源
+  disabled:
+    tencent:
+      enabled: false
+      priority: 90
+    baostock:
+      enabled: false
+      priority: 90
+    alphaear_stock:
+      enabled: false
+      priority: 90
+    alphaear_provider:
+      enabled: false
+      priority: 90
+
+# 数据源优先级（用于 CachedDataProvider）
+# 熔断降级链：MX → mootdx → tencent_direct → akshare
+provider_registry:
+  plugin:mx_provider:
+    enabled: true
+    priority: 1
+  plugin:mootdx_provider:
+    enabled: true
+    priority: 2
+  plugin:tencent_direct_provider:
+    enabled: true
+    priority: 3
+  akshare:
+    enabled: true
+    priority: 15
+  eastmoney:
+    enabled: false
+    priority: 90
+  tencent:
+    enabled: false
+    priority: 90
+  plugin:alphaear_provider:
+    enabled: false
+    priority: 90
+  plugin:alphaear_stock_provider:
+    enabled: false
+    priority: 90
+  baostock:
+    enabled: false
+    priority: 90
+
+# 限流配置
+rate_limit:
+  eastmoney:
+    min_interval: 1.0
+    jitter_max: 0.5
+    max_per_second: 5
+    max_concurrent: 10
+    max_per_minute: 200
+    max_per_5min: 300
+
+# 熔断器配置
+circuit_breaker:
+  mx:
+    failure_threshold: 3
+    cooldown_seconds: 60  # 1分钟（API恢复快）
+    success_threshold: 2
+  mootdx:
+    failure_threshold: 5
+    cooldown_seconds: 300  # 5分钟
+    success_threshold: 2
+  tencent:
+    failure_threshold: 5
+    cooldown_seconds: 300
+    success_threshold: 2
+  eastmoney:
+    failure_threshold: 3
+    cooldown_seconds: 600  # 10分钟
+    success_threshold: 2
+
+# 缓存配置（增加 TTL 减少重复请求）
+cache:
+  realtime_ttl_seconds: 300  # 5分钟
+  history_ttl_hours: 48
+  fundamentals_ttl_hours: 168
+  news_ttl_hours: 8
+  db_path: cache/market_data.db
+
+# 技术指标（本地计算）
+technicals:
+  method: local_compute
+  source: history
+  covers:
+    - ma5
+    - ma10
+    - ma20
+    - ma60
+    - rsi14
+    - macd
+    - bollinger
+    - atr14
+    - vol_ratio
+
+# 新闻与情绪
+news:
+  primary:
+    id: alphaear_news
+    path: ~/AF/skills/alphaear-news
+    type: web_scraper
+    auth: none
+    covers:
+      - news
+      - announcements
+      - research_reports
+
+sentiment:
+  primary:
+    id: alphaear_sentiment
+    path: ~/AF/skills/alphaear-sentiment
+    type: local_sqlite
+    auth: none
+    covers:
+      - news_sentiment
+      - daily_news_cache
+      - finbert_analysis
+
+# 宏观数据
+macro:
+  method: web_scrape
+  sources:
+    - 国家统计局
+    - 央行公告
+    - 东方财富宏观数据
+  auth: none

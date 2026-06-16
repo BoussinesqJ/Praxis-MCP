@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+data/logs/
+
+# Backup
+*.bak
+*.bak.*
+
+# Model binaries (too large for git)
+models/*.bin
+models/*.safetensors
+models/*.pt
+models/*.pth
+models/*.onnx
+models/*.msgpack
+models/*.h5

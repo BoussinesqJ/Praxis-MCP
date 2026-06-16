@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "praxis": {
+      "command": "python",
+      "args": [
+        "praxis/mcp_server.py"
+      ],
+      "env": {
+        "PRAXIS_WORKSPACE": ".",
+        "PRAXIS_TOOLS_TIER": "core",
+        "PYTHONPATH": ".",
+        "MX_APIKEY": "${MX_APIKEY}"
+      }
+    }
+  }
+}
