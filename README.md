@@ -21,8 +21,6 @@
 
 **v4.0.0 定位**：PortfolioParser 重构 + 风控黑名单修复 + BSE 支持
 
-**v4.0.0 定位**：单工具链式 SOP + 级联复盘体系 + 状态卡联动
-
 **核心理念**：**工具负责算，状态卡负责记，AI 负责串。**
 
 **核心价值**：
@@ -40,7 +38,7 @@
 ### 安装
 
 ```bash
-git clone https://github.com/BoussinesqJ/Praxis-MCP.git
+git clone https://github.com/BoussinesqJ/Praxis.git
 cd Praxis
 pip install -e .
 ```
@@ -170,7 +168,7 @@ praxis serve
 | Rule 3 | 阶梯仓位 | 哨兵数 → 20/30/40/60% 四档 |
 | Rule 4 | 条件单退场 | 1 天暂停新建，2 天取消存量 |
 | Rule 5 | 估值底线 | PE>80% 且 PB>70% 拦截 |
-| Rule 6 | 科技暴露 | 科技类 ≤ 25% |
+| Rule 6 | 科技暴露 | 016874+589850 ≤ 25% |
 | Rule 7 | 周期陷阱 | 煤炭/半导体需景气度验证 |
 | Rule 8 | 可控追高 | ≤总资产 × 3% |
 | Rule 9 | 底仓锚定 | 首次建仓与网格触发的单笔基准提升至总资产 10% |
@@ -349,7 +347,7 @@ Praxis/
 ### v4.0.0 (2026-06-16) — PortfolioParser 重构 + 风控黑名单修复
 
 #### 架构修复
-- ✅ PortfolioParser 完整重构：从持仓表精准解析 3 只真实持仓（000001/600000/510050），不再将预算误统计为持仓市值
+- ✅ PortfolioParser 完整重构：从持仓表精准解析 3 只真实持仓（016874/600995/510310），不再将预算误统计为持仓市值
 - ✅ 资金水位推导：total_assets 直接取自合计行，cash = total_assets - positions_value，仓位比精确至 10.9%
 - ✅ 科创板风控黑名单修复：`_check_banned_market()` 新增 InvestorConstraints fallback，补齐 BSE 北交所前缀识别（83/87/92/43）
 - ✅ 17/17 全量测试通过（此前 1 个故障已修复）
@@ -397,14 +395,3 @@ MIT License
 - [go-stock](https://github.com/ArvinLovegood/go-stock) - 6.4k stars
 - [a-stock-data](https://github.com/simonlin1212/a-stock-data) - 3.9k stars
 - [adata](https://github.com/1nchaos/adata) - 4.7k stars
-
----
-
-## 📖 文档索引
-
-| 文档 | 语言 | 说明 |
-|---|---|---|
-| `README.md` | 中文 | 项目总览（本文件） |
-| `README.en.md` | English | Project overview |
-| `QUICKSTART.md` | 中文 | 5 分钟快速上手 |
-| `AI_INTEGRATION.md` | 中文 | AI 客户端 MCP 接入指南 |
