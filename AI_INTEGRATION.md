@@ -1,7 +1,7 @@
 # AI Agent 集成指南 — 将 Praxis MCP 接入你的 AI 客户端
 
 > Praxis 通过 MCP（Model Context Protocol）与 AI 客户端通信。  
-> 配置完成后，你的 AI 就能直接调用 Praxis 的 30+ 投研工具。
+> 配置完成后，你的 AI 就能直接调用 Praxis 的 28 个投研工具。
 
 ---
 
@@ -40,7 +40,7 @@
 ```bash
 claude
 # 然后输入：/tools
-# 应能看到 praxis 开头的 30+ 工具列表
+# 应能看到 praxis 开头的 28 个工具列表
 ```
 
 ### 3. Trae

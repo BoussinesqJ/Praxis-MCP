@@ -168,7 +168,7 @@ project.md  ←── SSOT（唯一真相源：持仓/网格/止损/规则）
 
 ```
 praxis/
-├── praxis/              # 核心引擎 + MCP 服务器 + 30+ 工具
+├── praxis/              # 核心引擎 + MCP 服务器 + 28 工具
 ├── praxis_sdk/          # 开发层 SDK
 ├── providers/           # 数据源插件
 ├── config/              # 客户端配置示例

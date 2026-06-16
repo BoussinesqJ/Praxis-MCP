@@ -1,6 +1,6 @@
 # Skill 工作流链路参考
 
-> Praxis 提供 30+ MCP 原子工具，以下链路展示如何将它们串联为完整工作流。  
+> Praxis 提供 28 个 MCP 原子工具，以下链路展示如何将它们串联为完整工作流。  
 > 你可以根据自己 AI 客户端的 Skill 格式（`.claude/skills/`、Trae 规则、Workbuddy workflow 等），将以下步骤改编为 Skill 文件。
 
 ---

@@ -1,7 +1,7 @@
 # Praxis — Practice, Reflection, And eXponential Improvement System
 
 > An MCP-powered investment research discipline system.  
-> 30+ atomic tools for market data, portfolio management, sentiment analysis, and performance review.
+> 28 atomic tools for market data, portfolio management, sentiment analysis, and performance review.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
@@ -72,7 +72,7 @@ See [AI_INTEGRATION.md](AI_INTEGRATION.md) for client-specific instructions.
 
 ```
 praxis/
-├── praxis/           # Core engine + MCP server + 30+ tools
+├── praxis/           # Core engine + MCP server + 28 tools
 ├── praxis_sdk/       # Developer SDK
 ├── providers/        # Data source plugins (15 providers)
 ├── scripts/          # Utility scripts

@@ -4,7 +4,7 @@
 
 ## 概述
 
-Praxis 是一套面向 A 股 ETF 投资的 AI 投研纪律系统，通过 MCP 协议为 AI Agent（Reasonix、Antigravity、Claude Code 等）提供 **30+ 个结构化工具**，覆盖从行情获取、情感分析到交易约束检查的完整投研链路。
+Praxis 是一套面向 A 股 ETF 投资的 AI 投研纪律系统，通过 MCP 协议为 AI Agent（Reasonix、Antigravity、Claude Code 等）提供 **28 个结构化工具**，覆盖从行情获取、情感分析到交易约束检查的完整投研链路。
 
 核心设计理念：**AI 做决策，Praxis 管纪律**。
 
@@ -16,7 +16,7 @@ Praxis 是一套面向 A 股 ETF 投资的 AI 投研纪律系统，通过 MCP �
 │                  praxis/mcp_server.py                │
 ├─────────┬──────────────┬──────────────┬──────────────┤
 │  tools/ │   engine/    │    core/     │   prompts/   │
-│ 30+ MCP │  业务逻辑引擎  │  基础设施     │  团队 Prompt  │
+│ 28  MCP │  业务逻辑引擎  │  基础设施     │  团队 Prompt  │
 │  工具实现 │              │              │              │
 ├─────────┴──────────────┴──────────────┴──────────────┤
 │                    数据层 / 存储层                      │
@@ -62,7 +62,7 @@ praxis/
 │       ├── slippage_model.py #  滑点模型
 │       └── trading_calendar.py # 交易日历
 │
-├── tools/                 # MCP 工具实现层（30+ 工具）
+├── tools/                 # MCP 工具实现层（28 工具）
 │   ├── news.py            #   新闻聚合（AlphaEar NewsNow API）
 │   ├── news_alphaear.py   #   AlphaEar NewsNow 对接层
 │   ├── news_mx.py         #   妙想 API 新闻

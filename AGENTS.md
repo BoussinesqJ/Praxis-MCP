@@ -1,14 +1,14 @@
 # AGENTS.md — Praxis 投研纪律系统
 
 > Practice, Reflection, And eXponential Improvement System
-> AETF网格投研纪律系统，通过 MCP 协议为 AI Agent 提供 30+ 结构化投研工具。
+> AETF网格投研纪律系统，通过 MCP 协议为 AI Agent 提供 28 个结构化投研工具。
 
 > 🚨 **AI 行为最高准则**：所有 AI 成员在学习新技能或查阅系统规范前，必须先掌握 [SOP_INDEX.md](SOP_INDEX.md) 的向下覆写逻辑（Tier 0 永远大于 Tier 3）。
 
 ## Project
 
 - **Stack**: Python 3.11+ / Pydantic 2 / MCP (stdio) / httpx / pytest (asyncio_mode=auto)
-- **Entry point**: `praxis/mcp_server.py` (MCP Server, stdio transport, 30+ 活跃工具)
+- **Entry point**: `praxis/mcp_server.py` (MCP Server, stdio transport, 28 个活跃工具)
 - **CLI**: `python -m praxis.cli` (15 个子命令：market / portfolio / ledger / strategy / ...)
 - **Config**: `reasonix.toml` (agent), `.mcp.json` (MCP server), `project.md` (持仓真相源)
 - **Version**: v4.0.0
@@ -33,7 +33,7 @@ python -m praxis.cli --help
 
 ```
 praxis/
-├── mcp_server.py      # MCP 入口：30+ 工具注册 + 级联复盘路由
+├── mcp_server.py      # MCP 入口：28 工具注册 + 级联复盘路由
 ├── tools/             # MCP 工具实现层（42 个文件，每个一个功能域）
 │   ├── market.py      #   实时行情
 │   ├── sentinel.py    #   哨兵雷达（MCP 工具层）
