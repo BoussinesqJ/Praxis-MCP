@@ -386,3 +386,4 @@ MIT License
 | `QUICKSTART.md` | 中文 | 5 分钟快速上手 |
 | `AI_INTEGRATION.md` | 中文 | AI 客户端 MCP 接入指南 |
 | `tpl/skills-guide.md` | 中文 | 工作流链路参考 |
+| `tpl/skills/` | 中文 | 15 个 SKILL 工作流模板（脱敏版） |
