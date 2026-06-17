@@ -100,6 +100,7 @@ praxis/
 | [AGENTS.md](AGENTS.md) | 中文 | Architecture & conventions |
 | `obsidian/11-MCP工具清单.md` | 中文 | Complete tool reference |
 | [CHANGELOG.md](CHANGELOG.md) | 中文 | Version history |
+| `tpl/skills/` | 中文 | 15 workflow Skill templates |
 
 ---
 
