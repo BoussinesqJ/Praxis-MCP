@@ -103,13 +103,13 @@ class TestCheckpointer:
         """测试多标的隔离。"""
         date = "2026-06-12"
 
-        save_checkpoint("000001", date, "asrg", "600995 data")
+        save_checkpoint("000001", date, "asrg", "000001 data")
         save_checkpoint("510050", date, "asrg", "510050 data")
 
         loaded_000001 = load_checkpoint("000001", date)
         loaded_510050 = load_checkpoint("510050", date)
 
-        assert loaded_000001["asrg"] == "600995 data"
+        assert loaded_000001["asrg"] == "000001 data"
         assert loaded_510050["asrg"] == "510050 data"
         assert loaded_000001["asrg"] != loaded_510050["asrg"]
 

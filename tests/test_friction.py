@@ -39,7 +39,7 @@ class TestCalculateFee:
     def test_etf_fee(self):
         """ETF费用（无印花税）"""
         result = calculate_fee(
-            ticker="510310",
+            ticker="510050",
             asset_type="etf",
             action="buy",
             quantity=100,

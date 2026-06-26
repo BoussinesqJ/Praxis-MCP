@@ -304,7 +304,7 @@ class TestPortfolioParser:
 
         # 510050 上证50ETF
         p = pos_by_ticker.get("510050")
-        assert p is not None, "缺少 510310 沪深300ETF"
+        assert p is not None, "缺少 510050 上证50ETF"
         assert p.name == "上证50ETF"
         assert p.quantity == 1000
         assert abs(p.avg_cost - 3.50) < 0.001

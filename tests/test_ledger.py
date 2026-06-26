@@ -209,7 +209,7 @@ class TestLedgerQuery:
         tx2 = Transaction(
             tx_id="tx-002",
             type=TransactionType.BUY,
-            ticker="510310",
+            ticker="510050",
             quantity=400,
             price=4.826,
         )

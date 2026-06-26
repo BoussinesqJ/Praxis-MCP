@@ -137,7 +137,7 @@
       "input": {
         "pe_percentile": 0.82,
         "pb_percentile": 0.75,
-        "ticker": "510310",
+        "ticker": "600000",
         "asset_type": "etf_index"
       },
       "expected": {
@@ -154,7 +154,7 @@
       "input": {
         "pe_percentile": 0.82,
         "pb_percentile": 0.45,
-        "ticker": "510310",
+        "ticker": "600000",
         "asset_type": "etf_index"
       },
       "expected": {
@@ -309,7 +309,7 @@
         "pe_percentile": 0.85,
         "pb_percentile": 0.75,
         "price_in_grid": true,
-        "ticker": "510310",
+        "ticker": "600000",
         "total_assets": 70000,
         "size": 5000,
         "asset_type": "etf_index"

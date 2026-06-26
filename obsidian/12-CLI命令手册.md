@@ -18,7 +18,7 @@ praxis asset --investor demo --portfolio core --ticker 000001
 
 ### 行情数据
 ```bash
-praxis market quote --tickers 000001,510310
+praxis market quote --tickers 000001,600000
 ```
 
 ### 对账计算

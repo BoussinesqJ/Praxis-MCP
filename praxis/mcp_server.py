@@ -22,7 +22,26 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("akshare").setLevel(logging.WARNING)
 logging.getLogger("ak").setLevel(logging.WARNING)
 
-# ─── 代理穿透保护：避免本地 VPN/代理拦截 akshare 等国内数据源 ─────
+# ─── 全局 CachedDataProvider 单例（避免每次工具调用都 auto_discover） ─
+_GLOBAL_PROVIDER: CachedDataProvider | None = None
+
+
+async def get_global_provider() -> CachedDataProvider:
+    """获取全局共享的 CachedDataProvider 实例（懒初始化）"""
+    global _GLOBAL_PROVIDER
+    if _GLOBAL_PROVIDER is None:
+        from praxis.engine.data.provider import CachedDataProvider
+
+        _GLOBAL_PROVIDER = CachedDataProvider(workspace=WORKSPACE)
+    return _GLOBAL_PROVIDER
+
+
+async def close_global_provider():
+    """关闭全局 provider（服务退出时调用）"""
+    global _GLOBAL_PROVIDER
+    if _GLOBAL_PROVIDER is not None:
+        await _GLOBAL_PROVIDER.close()
+        _GLOBAL_PROVIDER = None
 os.environ.setdefault("NO_PROXY", "*")
 
 # ─── 安全线程包装器 (Stdio 隔离核心) ─────────────────────────────
@@ -122,7 +141,6 @@ _TOOLS_TIER: dict[str, dict] = {
     "trading_friction_tool": {"tier": "core", "version": "3.5"},
     # ── 数据源工具（新增）──
     "fund_flow_tool": {"tier": "core", "version": "3.4", "deprecated": True},
-    "northbound_tool": {"tier": "core", "version": "3.4", "deprecated": True},
     "dragon_tiger_tool": {"tier": "core", "version": "3.4", "deprecated": True},
     "research_report_tool": {"tier": "core", "version": "3.4", "deprecated": True},
     # ── v3.5 整合工具 (Consolidated Tools) ──
@@ -191,7 +209,7 @@ async def get_market_data_tool(tickers: list[str]) -> dict:
     """获取实时行情数据
 
     Args:
-        tickers: 标的代码列表（如 ["600995", "510310"]）
+        tickers: 标的代码列表（如 ["000001", "600000"]）
 
     Returns:
         实时行情数据，包含价格、涨跌幅、成交量等
@@ -243,7 +261,7 @@ async def get_performance_tool(
         exclude_reversed: 排除已冲销的交易对（推荐开启以获得真实绩效）
         exclude_tags: 排除带有这些标签的交易（如 ["test", "migration"]）
         include_tags: 仅计算带有这些标签的交易（如 ["real"]）
-        ticker: 仅计算指定标的的绩效（如 "600995"）
+        ticker: 仅计算指定标的的绩效（如 "000001"）
     提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
     from praxis.tools.performance import get_performance
@@ -255,7 +273,8 @@ async def reconcile_tool(investor: str, portfolio: str, nav: float | None = None
         提示: 首次使用请调用 discover_workspace_tool() 获取可用的 investor/portfolio ID。
     """
     from praxis.tools.engine import reconcile
-    return await reconcile(investor, portfolio, nav, WORKSPACE)
+    provider = await get_global_provider()
+    return await reconcile(investor, portfolio, nav, WORKSPACE, provider=provider)
 
 
 async def check_constraints_tool(investor: str, portfolio: str, action: str, ticker: str, amount: float = 0) -> dict:
@@ -1425,32 +1444,6 @@ async def fund_flow_tool(action: str, ticker: str = "", days: int = 5) -> dict:
         return {"success": False, "error": f"未知 action: {action}，可选: min/daily/all"}
 
 
-async def northbound_tool(action: str, days: int = 5) -> dict:
-    """北向资金操作
-
-    Args:
-        action: 操作类型
-            - realtime: 获取北向资金实时数据
-            - history: 获取北向资金历史数据
-            - flow: 获取北向资金流向（实时 + 历史）
-        days: 获取天数（history 可选，默认5）
-    """
-    from praxis.tools.northbound import (
-        get_northbound_realtime,
-        get_northbound_history,
-        get_northbound_flow,
-    )
-
-    if action == "realtime":
-        return await get_northbound_realtime()
-    elif action == "history":
-        return await get_northbound_history(days=days)
-    elif action == "flow":
-        return await get_northbound_flow()
-    else:
-        return {"success": False, "error": f"未知 action: {action}，可选: realtime/history/flow"}
-
-
 async def dragon_tiger_tool(action: str, ticker: str = "", date: str = "", limit: int = 50) -> dict:
     """龙虎榜操作
 
@@ -1703,7 +1696,7 @@ async def trading_tool(
 
 
 async def market_data_ext_tool(
-    action: str,  # fund_flow / northbound / dragon_tiger / research
+    action: str,  # fund_flow / dragon_tiger / research
     ticker: str = "",
     days: int = 5,
     limit: int = 20,
@@ -1714,7 +1707,6 @@ async def market_data_ext_tool(
     Args:
         action: 操作类型
             - fund_flow: 资金流向（min/daily/all）
-            - northbound: 北向资金（realtime/history/flow）
             - dragon_tiger: 龙虎榜（list/detail）
             - research: 研报（list/eps）
         ticker: 标的代码
@@ -1726,7 +1718,7 @@ async def market_data_ext_tool(
         扩展行情数据
     """
     # 参数验证
-    if action not in ["fund_flow", "northbound", "dragon_tiger", "research"]:
+    if action not in ["fund_flow", "dragon_tiger", "research"]:
         return {
             "success": False,
             "error_code": "INVALID_ACTION",
@@ -1737,9 +1729,6 @@ async def market_data_ext_tool(
     if action == "fund_flow":
         from praxis.tools.fund_flow import get_fund_flow_daily
         return await get_fund_flow_daily(ticker=ticker, days=days)
-    elif action == "northbound":
-        from praxis.tools.northbound import get_northbound_realtime
-        return await get_northbound_realtime()
     elif action == "dragon_tiger":
         from praxis.tools.dragon_tiger import get_dragon_tiger_list
         return await get_dragon_tiger_list(limit=limit)

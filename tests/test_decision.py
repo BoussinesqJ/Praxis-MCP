@@ -107,7 +107,7 @@ class TestDecisionQuery:
 
     def test_get_by_ticker(self, temp_recorder):
         """按标的查询"""
-        for i, ticker in enumerate(["000001", "510310", "000001"]):
+        for i, ticker in enumerate(["000001", "510050", "000001"]):
             record = DecisionRecord(
                 decision_id=f"dc-{ticker}-{i:03d}",
                 ticker=ticker,

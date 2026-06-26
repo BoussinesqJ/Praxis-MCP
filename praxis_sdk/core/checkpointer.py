@@ -56,7 +56,7 @@ def save_checkpoint(
     """保存断点。
 
     Args:
-        ticker: 标的代码（如 "600995"）
+        ticker: 标的代码（如 "000001"）
         trade_date: 交易日期（如 "2026-06-12"）
         phase: 完成的阶段标识（必须在 VALID_PHASES 中）
         data: 该阶段的完整 Markdown 输出

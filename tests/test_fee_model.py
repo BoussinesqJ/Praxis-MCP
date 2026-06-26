@@ -101,7 +101,7 @@ class TestETFFeeCalculator:
     def test_transfer_fee_shanghai_etf(self):
         """测试沪市 ETF 过户费（51/58 开头）"""
         result = self.calculator.calculate(
-            action="buy", quantity=1000, price=10.0, ticker="510310"
+            action="buy", quantity=1000, price=10.0, ticker="510050"
         )
         # 过户费=10000×0.0001=1.0
         assert result.transfer_fee == 1.0
