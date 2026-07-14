@@ -1,0 +1,180 @@
+# ============================================================
+# PRAXIS Agent — Git Ignore
+# ============================================================
+# 基于 GitHub 推荐的 Python .gitignore 模板，按本项目定制
+# ============================================================
+
+
+# ----------------------------------------------------------------
+# 敏感配置（必须忽略，避免泄露真实凭证）
+# ----------------------------------------------------------------
+
+# 环境变量文件（含 PRAXIS_EMERGENCY_TOKEN 等）
+.env
+.env.*
+!.env.example
+
+# Claude / Copilot / Cursor 等 AI 助手的本地配置
+.claude/
+.copilot/
+.cursor/
+.aider*
+
+# WorkBuddy / 其他 Agent 工具的本地记忆
+.workbuddy/
+.agent/
+.agents/
+
+
+# ----------------------------------------------------------------
+# Python 构建 / 缓存
+# ----------------------------------------------------------------
+
+# 编译产物
+*.py[cod]
+*$py.class
+*.so
+
+# 字节码与优化文件
+__pycache__/
+*.pyc
+*.pyo
+
+# 打包 / 发布
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 测试 / 覆盖率
+.coverage
+.coverage.*
+.cache
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+
+# 类型检查
+.pyre/
+.pytype/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+
+# ----------------------------------------------------------------
+# IDE / 编辑器
+# ----------------------------------------------------------------
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+.\#*
+
+
+# ----------------------------------------------------------------
+# 操作系统垃圾
+# ----------------------------------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+
+# ----------------------------------------------------------------
+# 项目特定 — 运行期数据（绝对不能提交到公开仓库）
+# ----------------------------------------------------------------
+
+# 数据工作区（实际持仓/账本/交易记录）
+data/
+*.jsonl
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+*.bak-*
+
+# 本地工作区与缓存
+workspace/
+workspaces/
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.swp
+
+
+# ----------------------------------------------------------------
+# 文档构建
+# ----------------------------------------------------------------
+
+docs/_build/
+site/
+
+
+# ----------------------------------------------------------------
+# 杂项
+# ----------------------------------------------------------------
+
+# 备份的模型/数据文件
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+
+# Jupyter
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/

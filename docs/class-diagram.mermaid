@@ -1,0 +1,144 @@
+classDiagram
+    direction TB
+
+    class ReviewPeriod {
+        +str start
+        +str end
+        +str label
+    }
+
+    class PortfolioDimension {
+        +float total_assets
+        +float nav
+        +int positions
+        +float cash_ratio_pct
+    }
+
+    class SectorData {
+        +list~dict~ top_gainers
+        +list~dict~ top_losers
+        +list~dict~ consecutive_hot
+    }
+
+    class FundFlowData {
+        +float|None main_force_net
+        +float|None north_bound_net
+        +list~dict~ etf_inflow_top5
+    }
+
+    class SentimentData {
+        +float|None avg_limit_up_down_ratio
+        +float|None avg_turnover
+        +float|None weekly_volatility
+    }
+
+    class MacroEvent {
+        +str date
+        +str title
+        +str|None summary
+    }
+
+    class MarketDimension {
+        +str index_code
+        +float|None weekly_change_pct
+        +str|None volume_trend
+        +dict~str,str~ ma_positions
+        +SectorData|None sector_rotation
+        +FundFlowData|None fund_flow
+        +SentimentData|None sentiment
+        +list~MacroEvent~ macro_events
+    }
+
+    class SentinelDimension {
+        +str overall_signal
+        +str attack_defense
+        +bool rule23_active
+        +list~dict~ signals
+    }
+
+    class PerformanceDimension {
+        +float total_return
+        +float annualized_return
+        +float benchmark_return
+        +float excess_return
+        +float max_drawdown
+        +float volatility
+        +float|None sharpe_ratio
+        +float|None calmar_ratio
+        +float win_rate
+        +float|None profit_loss_ratio
+        +float turnover_rate
+        +float total_fee
+    }
+
+    class DecisionReviewItem {
+        +str decision_id
+        +str ticker
+        +str action
+        +float confidence
+        +str review_type
+        +float|None actual_return_pct
+        +float|None benchmark_return_pct
+        +float|None alpha
+        +str|None notes
+    }
+
+    class DecisionReviewDimension {
+        +int total_decisions
+        +int filled_count
+        +int pending_5d
+        +int pending_20d
+        +int pending_60d
+        +list~DecisionReviewItem~ items
+    }
+
+    class ValuationDimension {
+        +str index_code
+        +str index_name
+        +float|None pe_ttm
+        +float|None pe_percentile
+        +float|None pb
+        +float|None pb_percentile
+        +str valuation_level
+    }
+
+    class CascadeDimension {
+        +str mode
+        +str period
+        +int total_interceptions
+        +float opportunity_cost_total
+        +float risk_mitigated_total
+        +float net_benefit
+        +float interception_ratio
+        +bool should_evolve
+        +str evolution_reason
+        +list~str~ suggested_changes
+        +str risk_quality_md
+    }
+
+    class ReviewSnapshot {
+        +str snapshot_type
+        +str generated_at
+        +ReviewPeriod period
+        +PortfolioDimension|None portfolio
+        +MarketDimension|None market
+        +SentinelDimension|None sentinel
+        +PerformanceDimension|None performance
+        +DecisionReviewDimension|None decision_reviews
+        +ValuationDimension|None valuation
+        +CascadeDimension|None cascade
+    }
+
+    ReviewSnapshot *-- ReviewPeriod
+    ReviewSnapshot *-- "0..1" PortfolioDimension
+    ReviewSnapshot *-- "0..1" MarketDimension
+    ReviewSnapshot *-- "0..1" SentinelDimension
+    ReviewSnapshot *-- "0..1" PerformanceDimension
+    ReviewSnapshot *-- "0..1" DecisionReviewDimension
+    ReviewSnapshot *-- "0..1" ValuationDimension
+    ReviewSnapshot *-- "0..1" CascadeDimension
+    MarketDimension *-- "0..1" SectorData
+    MarketDimension *-- "0..1" FundFlowData
+    MarketDimension *-- "0..1" SentimentData
+    MarketDimension *-- "*" MacroEvent
+    DecisionReviewDimension *-- "*" DecisionReviewItem

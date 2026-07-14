@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant LLM as LLM Client
+    participant MCP as MCP Server
+    participant FRO as FullReviewOrchestrator
+    participant PF as Portfolio (admin)
+    participant PERF as Performance (admin)
+    participant SENT as Sentinel (risk)
+    participant VAL as Valuation (risk)
+    participant MWC as MarketWeeklyCollector
+    participant WT as WestockTransport
+    participant RF as ReviewFiller
+    participant WSTOCK as westock-mcp
+
+    LLM->>MCP: full_review(investor, portfolio, week_ending, index_code)
+    MCP->>FRO: execute(deps)
+
+    par 并行采集 6 维度
+        FRO->>PF: portfolio(action="state")
+        PF-->>FRO: {total_assets, nav, positions, cash}
+    and
+        FRO->>PERF: performance(investor, portfolio)
+        PERF-->>FRO: {total_return, sharpe, max_dd, win_rate...}
+    and
+        FRO->>SENT: sentinel(action="scan")
+        SENT-->>FRO: {overall_signal, signals...}
+    and
+        FRO->>VAL: valuation(action="percentile")
+        VAL-->>FRO: {pe_ttm, pe_percentile...}
+    and
+        FRO->>MWC: collect_all(week_ending, index_code)
+        MWC->>WT: fetch_sector_rotation()
+        WT->>WSTOCK: data_sector(start, end)
+        WSTOCK-->>WT: {top_gainers, top_losers...}
+        MWC->>WT: fetch_fund_flow()
+        WT->>WSTOCK: data_fund_flow(start, end)
+        WSTOCK-->>WT: {main_force_net...}
+        MWC->>WT: fetch_sentiment()
+        WT->>WSTOCK: data_market_overview()
+        WSTOCK-->>WT: {limit_up_down, turnover...}
+        MWC->>WT: fetch_macro_events()
+        WT->>WSTOCK: data_news/data_macro()
+        WSTOCK-->>WT: {events...}
+        WT-->>MWC: {trend, sector, fund_flow, sentiment, macro}
+        MWC-->>FRO: dimensions dict
+    and
+        FRO->>RF: fill_pending_reviews()
+        RF-->>FRO: {items: [{actual_return_pct, benchmark_return_pct, alpha}...]}
+    end
+
+    FRO->>FRO: assemble ReviewSnapshot
+    FRO-->>MCP: ReviewSnapshot.model_dump()
+    MCP-->>LLM: {"success": true, "data": {...}}

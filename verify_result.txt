@@ -1,0 +1,2 @@
+orchestrator is coroutine: True
+WorkflowInput fields: ['action', 'workflow_name', 'ticker', 'decision_action', 'confidence', 'reasoning', 'investor', 'portfolio']
